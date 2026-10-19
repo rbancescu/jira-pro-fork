@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.xwiki.jirapro</groupId>
+    <artifactId>jira-pro-cloud</artifactId>
+    <version>1.0.2-SNAPSHOT</version>
+  </parent>
+  <artifactId>jira-pro-cloud-api</artifactId>
+  <name>JIRA Pro - Cloud - API</name>
+  <packaging>jar</packaging>
+  <description>Jira Cloud support API</description>
+  <properties>
+    <xwiki.extension.name>JIRA Pro Cloud API</xwiki.extension.name>
+    <xwiki.extension.category>other</xwiki.extension.category>
+    <xwiki.jacoco.instructionRatio>0.99</xwiki.jacoco.instructionRatio>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.xwiki.commons</groupId>
+      <artifactId>xwiki-commons-component-api</artifactId>
+      <version>${commons.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.commons</groupId>
+      <artifactId>xwiki-commons-xml</artifactId>
+      <version>${commons.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- JIRA dependency -->
+    <dependency>
+      <groupId>org.xwiki.contrib.jira</groupId>
+      <artifactId>jira-config-api</artifactId>
+      <version>${jira.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.contrib.jira</groupId>
+      <artifactId>jira-macro-common</artifactId>
+      <version>${jira.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.xwiki.jirapro</groupId>
+      <artifactId>jira-pro-oauth-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <!-- To check that the chart data can be read by the chart macros. -->
+      <groupId>org.xwiki.contrib.jira</groupId>
+      <artifactId>jira-macro-charts</artifactId>
+      <version>${jira.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.commons</groupId>
+      <artifactId>xwiki-commons-tool-test-component</artifactId>
+      <version>${commons.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- To test the HTTP requests. Same version as in the JIRA contrib extension. -->
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>2.27.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

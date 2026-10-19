@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1",
+    "key": "TEST-1",
+    "fields": {
+      "status": {"id": "1", "name": "Open"},
+      "assignee": {"accountId": "a1", "displayName": "Alice"},
+      "reporter": {"accountId": "b1", "displayName": "Bob"},
+      "priority": {"id": "3", "name": "Major"},
+      "issuetype": {"id": "1", "name": "Bug"},
+      "components": [{"id": "10", "name": "API"}],
+      "fixVersions": [{"id": "100", "name": "1.0"}],
+      "created": "2026-09-20T10:00:00.000+0000",
+      "resolutiondate": null
+    }
+  },
+  {
+    "id": "2",
+    "key": "TEST-2",
+    "fields": {
+      "status": {"id": "6", "name": "Closed"},
+      "assignee": {"accountId": "b1", "displayName": "Bob"},
+      "reporter": {"accountId": "b1", "displayName": "Bob"},
+      "priority": {"id": "1", "name": "Blocker"},
+      "issuetype": {"id": "1", "name": "Bug"},
+      "components": [{"id": "10", "name": "API"}, {"id": "11", "name": "UI"}],
+      "fixVersions": [],
+      "created": "2026-09-01T09:00:00.000+0000",
+      "resolutiondate": "2026-09-19T08:00:00.000+0000"
+    }
+  },
+  {
+    "id": "3",
+    "key": "TEST-3",
+    "fields": {
+      "status": {"id": "6", "name": "Closed"},
+      "assignee": null,
+      "reporter": null,
+      "priority": {"id": "3", "name": "Major"},
+      "issuetype": {"id": "4", "name": "Improvement"},
+      "components": [],
+      "fixVersions": [{"id": "100", "name": "1.0"}, {"id": "101", "name": "2.0"}],
+      "created": "2026-06-01T09:00:00.000+0000",
+      "resolutiondate": "2026-09-30T15:00:00.000+0000"
+    }
+  },
+  {
+    "id": "4",
+    "key": "TEST-4",
+    "fields": {
+      "status": {"id": "1", "name": "Open"},
+      "assignee": {"accountId": "a1", "displayName": "Alice"},
+      "reporter": {"accountId": "a1", "displayName": "Alice"},
+      "priority": {"id": "4", "name": "Minor"},
+      "issuetype": {"id": "1", "name": "Bug"},
+      "components": [{"id": "11", "name": "UI"}],
+      "fixVersions": [],
+      "created": "2026-10-01T23:00:00.000-0500",
+      "resolutiondate": "not a date"
+    }
+  }
+]

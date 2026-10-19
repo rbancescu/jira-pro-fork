@@ -82,22 +82,36 @@
           #set ($formClientIdValue = $request.getParameter($formClientIdFieldName))
           #set ($formClientSecretValue = $request.getParameter($formClientSecretFieldName))
           ##
-          ## We need to get the JIRA Sever URL from the main config object from the form request
+          ## We need to get the JIRA Sever URL and instance type from the main config object from the form request
           ##
+          #set ($instanceType = '')
           #foreach ($param in $request.parameterMap.entrySet())
             #set ($entryMatcher = $mainClassIdMatcher.matcher($param.key))
             #if ($entryMatcher.find() &amp;&amp; $param.value[0] == $formIdValue)
               #set ($baseUrl = $request.getParameter("JIRA.JIRAConfigClass_${entryMatcher.group(1)}_url"))
+              #set ($instanceTypeFieldName = "JIRA.JIRAConfigClass_${entryMatcher.group(1)}_instanceType")
+              #set ($instanceType = "$!request.getParameter($instanceTypeFieldName)")
             #end
+          #end
+          #if ($instanceType == 'cloud')
+            ## JIRA Cloud relies on the Atlassian authorization server (OAuth 2.0 3LO), which is the same for all sites.
+            #set ($authorizationEndpoint = 'https://auth.atlassian.com/authorize?audience=api.atlassian.com&amp;prompt=consent')
+            #set ($tokenEndpoint = 'https://auth.atlassian.com/oauth/token')
+            ## The scopes are separated by commas since the OIDC configuration doesn't split them on spaces.
+            #set ($oauthScope = 'read:jira-work,write:jira-work,read:jira-user,offline_access')
+          #else
+            #set ($authorizationEndpoint = "${baseUrl}/rest/oauth2/latest/authorize")
+            #set ($tokenEndpoint = "${baseUrl}/rest/oauth2/latest/token")
+            #set ($oauthScope = 'WRITE')
           #end
           #set ($discard = $oidcObject.set('configurationName', $oidcConfigId))
           #set ($discard = $oidcObject.set('clientId', $formClientIdValue))
           #set ($discard = $oidcObject.set('clientSecret', $formClientSecretValue))
-          #set ($discard = $oidcObject.set('authorizationEndpoint', "${baseUrl}/rest/oauth2/latest/authorize"))
-          #set ($discard = $oidcObject.set('tokenEndpoint', "${baseUrl}/rest/oauth2/latest/token"))
+          #set ($discard = $oidcObject.set('authorizationEndpoint', $authorizationEndpoint))
+          #set ($discard = $oidcObject.set('tokenEndpoint', $tokenEndpoint))
           #set ($discard = $oidcObject.set('tokenEndpointMethod', 'client_secret_post'))
           #set ($discard = $oidcObject.set('tokenStorageScope', 'USER'))
-          #set ($discard = $oidcObject.set('scope', 'WRITE'))
+          #set ($discard = $oidcObject.set('scope', $oauthScope))
           #set ($discard = $oidcObject.set('userInfoSkip', 1))
           #set ($discard = $oidcObject.set('enableUser', 0))
           #set ($discard = $oidcObject.set('responseType', 'code'))

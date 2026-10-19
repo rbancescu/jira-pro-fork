@@ -43,6 +43,12 @@
     </dependency>
     <dependency>
       <groupId>com.xwiki.jirapro</groupId>
+      <artifactId>jira-pro-cloud-ui</artifactId>
+      <version>${project.version}</version>
+      <type>xar</type>
+    </dependency>
+    <dependency>
+      <groupId>com.xwiki.jirapro</groupId>
       <artifactId>jira-pro-issue-create-ui</artifactId>
       <version>${project.version}</version>
       <type>xar</type>

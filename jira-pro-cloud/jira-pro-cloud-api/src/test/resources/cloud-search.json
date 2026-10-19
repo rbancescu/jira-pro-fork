@@ -1,0 +1,84 @@
+{
+  "issues": [
+    {
+      "id": "10001",
+      "key": "TEST-1",
+      "self": "https://mysite.atlassian.net/rest/api/3/issue/10001",
+      "renderedFields": {
+        "created": "16/Apr/2004 10:57 AM",
+        "description": "<p>Some <b>description</b></p>",
+        "environment": "Linux",
+        "customfield_10020": "<p>Rich <i>text</i></p>"
+      },
+      "fields": {
+        "summary": "First issue",
+        "issuetype": {"id": "2", "name": "New Feature", "iconUrl": "https://mysite.atlassian.net/icons/feature.png"},
+        "project": {"id": "10031", "key": "TEST", "name": "Test project"},
+        "priority": {"id": "4", "name": "Minor", "iconUrl": "https://mysite.atlassian.net/icons/minor.svg"},
+        "status": {"id": "6", "name": "Closed", "iconUrl": "https://mysite.atlassian.net/icons/closed.png"},
+        "resolution": {"id": "1", "name": "Fixed"},
+        "resolutiondate": "2007-04-11T09:25:36.608-0700",
+        "created": "2004-04-16T10:57:58.413-0700",
+        "updated": "2025-09-21T12:19:47.977+0200",
+        "assignee": {"accountId": "account-1", "displayName": "John Doe"},
+        "reporter": {"accountId": "account-2", "displayName": "Jane Doe"},
+        "labels": ["label1", "label2"],
+        "versions": [{"id": "1", "name": "1.0"}],
+        "fixVersions": [{"id": "2", "name": "1.1"}, {"id": "3", "name": "2.0"}],
+        "components": [{"id": "5", "name": "core"}],
+        "duedate": "2007-05-01",
+        "votes": {"votes": 20, "hasVoted": false},
+        "watches": {"watchCount": 23, "isWatching": false},
+        "description": {"type": "doc", "version": 1, "content": []},
+        "environment": {"type": "doc", "version": 1, "content": []},
+        "customfield_10010": "Some text",
+        "customfield_10011": 1.5,
+        "customfield_10012": {"id": "100", "value": "Option A"},
+        "customfield_10013": [{"id": "101", "value": "One"}, {"id": "102", "value": "Two"}],
+        "customfield_10014": {"accountId": "account-3", "displayName": "Jack Doe"},
+        "customfield_10015": "2004-08-17T15:03:23.941-0700",
+        "customfield_10016": null,
+        "customfield_10017": [],
+        "customfield_10020": {"type": "doc", "version": 1, "content": []},
+        "customfield_10021": {"unknown": "structure"}
+      }
+    },
+    {
+      "id": "10002",
+      "key": "TEST-2",
+      "renderedFields": {"description": null},
+      "fields": {
+        "summary": "Second issue",
+        "issuetype": {"id": "1", "name": "Bug", "iconUrl": "https://mysite.atlassian.net/"},
+        "status": {"id": "1", "name": "Open", "iconUrl": "https://api.atlassian.com/ex/jira/cloud-id"},
+        "resolution": null,
+        "resolutiondate": null,
+        "created": "2020-01-02T03:04:05.000+0000",
+        "updated": "not a date",
+        "assignee": null,
+        "labels": [],
+        "versions": [],
+        "fixVersions": [],
+        "components": [],
+        "duedate": null,
+        "description": null
+      }
+    },
+    {
+      "id": "10003",
+      "key": "TEST-3",
+      "fields": {"summary": "Third issue"}
+    }
+  ],
+  "names": {
+    "customfield_10010": "Text field",
+    "customfield_10011": "Number field",
+    "customfield_10012": "Select field",
+    "customfield_10013": "Multi select field",
+    "customfield_10014": "User field",
+    "customfield_10015": "Date field",
+    "customfield_10020": "Rich text field"
+  },
+  "nextPageToken": "token",
+  "isLast": false
+}

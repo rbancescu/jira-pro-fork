@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.xwiki.jirapro</groupId>
+    <artifactId>jira-pro-cloud</artifactId>
+    <version>1.0.2-SNAPSHOT</version>
+  </parent>
+  <artifactId>jira-pro-cloud-ui</artifactId>
+  <name>JIRA Pro - Cloud - UI</name>
+  <packaging>xar</packaging>
+  <description>Jira Cloud support</description>
+  <properties>
+    <xwiki.extension.name>JIRA Pro Cloud</xwiki.extension.name>
+    <xwiki.extension.category>other</xwiki.extension.category>
+    <!-- The Cloud instance type must stay selectable and its labels displayed even without a valid license. -->
+    <xwiki.extension.licensing.publicDocuments>
+      XWiki.JIRAPro.Cloud.CloudInstanceTypeUIX,
+      XWiki.JIRAPro.Cloud.Translations
+    </xwiki.extension.licensing.publicDocuments>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.xwiki.jirapro</groupId>
+      <artifactId>jira-pro-cloud-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.contrib.jira</groupId>
+      <artifactId>jira-config-ui</artifactId>
+      <version>${jira.version}</version>
+      <type>xar</type>
+    </dependency>
+    <dependency>
+      <groupId>com.xwiki.licensing</groupId>
+      <artifactId>application-licensing-licensor-api</artifactId>
+      <version>${licensing.version}</version>
+    </dependency>
+  </dependencies>
+</project>
