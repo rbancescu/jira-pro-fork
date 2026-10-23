@@ -23,19 +23,21 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
 import org.jdom2.Document;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 import org.xwiki.contrib.jira.macro.JIRAConnector;
 import org.xwiki.contrib.jira.macro.JIRAGadgetType;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.xwiki.jirapro.cloud.internal.chart.CloudChartDataProvider;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
 
 /**
  * Get the data of the JIRA macros from a JIRA Cloud instance, using its REST API.
@@ -65,7 +67,8 @@ public class CloudJIRAConnector implements JIRAConnector
     private CloudIssueXMLConverter converter;
 
     @Inject
-    private CloudChartDataProvider chartDataProvider;
+    @Named("context")
+    private Provider<ComponentManager> componentManagerProvider;
 
     @Override
     public Document searchIssues(JIRAServer server, String jql, int maxCount) throws JIRAConnectionException
@@ -74,7 +77,7 @@ public class CloudJIRAConnector implements JIRAConnector
         List<JsonNode> searchResults =
             this.restClient.searchIssues(server, jql, List.of("*navigable"), "renderedFields,names", limit);
 
-        return this.converter.convert(searchResults, StringUtils.removeEnd(server.getURL(), "/"), limit);
+        return this.converter.convert(searchResults, server.getURL());
     }
 
     @Override
@@ -87,6 +90,14 @@ public class CloudJIRAConnector implements JIRAConnector
     public <T> T fetchGadgetData(JIRAServer server, JIRAGadgetType type, List<NameValuePair> parameters,
         Class<T> expectedType) throws JIRAConnectionException
     {
-        return this.chartDataProvider.fetch(server, type, parameters, expectedType);
+        CloudChartBuilder builder;
+        try {
+            builder = this.componentManagerProvider.get().getInstance(CloudChartBuilder.class, type.name());
+        } catch (ComponentLookupException e) {
+            throw new JIRAConnectionException(
+                String.format("The chart [%s] is not supported for JIRA Cloud instances.", type), e);
+        }
+
+        return builder.fetch(server, parameters, expectedType);
     }
 }

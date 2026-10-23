@@ -21,43 +21,32 @@ package com.xwiki.jirapro.cloud.internal.chart;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.NameValuePair;
+import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 
 /**
- * Computes the data of a chart from the issues it is about, in the JSON format of the JIRA Data Center gadget REST
- * resource of the chart.
+ * Computes the data of a chart for a JIRA Cloud instance, which has no gadget REST resources. There is one
+ * implementation per chart, whose hint is the name of the {@link org.xwiki.contrib.jira.macro.JIRAGadgetType} of the
+ * chart, like there is one data fetcher per chart in the JIRA macro.
  *
  * @version $Id$
  * @since 1.1.0
  */
+@Role
 public interface CloudChartBuilder
 {
     /**
-     * @param query the query of the chart
-     * @return the JQL query selecting the issues needed to compute the chart
+     * @param server the JIRA server
+     * @param parameters the query parameters of the JIRA Data Center gadget REST resource of the chart
+     * @param expectedType the type in which to convert the JSON data
+     * @param <T> the type in which to convert the JSON data
+     * @return the data of the chart, in the JSON format of the gadget REST resource
+     * @throws JIRAConnectionException if a request fails, or a {@link JIRABadRequestException} if the chart can't be
+     *     computed with these parameters
      */
-    default String getJQL(CloudChartQuery query)
-    {
-        return query.getJQL();
-    }
-
-    /**
-     * @param query the query of the chart
-     * @return the fields of the issues needed to compute the chart
-     * @throws JIRABadRequestException if the chart parameters are not supported
-     */
-    List<String> getFields(CloudChartQuery query) throws JIRABadRequestException;
-
-    /**
-     * @param issues the issues matching {@link #getJQL(CloudChartQuery)}, with the fields of
-     *     {@link #getFields(CloudChartQuery)}
-     * @param query the query of the chart
-     * @param siteURL the URL of the JIRA Cloud site, used to build the links to the issues
-     * @return the data of the chart, without the filter title and URL
-     * @throws JIRABadRequestException if the chart parameters are not supported
-     */
-    ObjectNode build(List<JsonNode> issues, CloudChartQuery query, String siteURL) throws JIRABadRequestException;
+    <T> T fetch(JIRAServer server, List<NameValuePair> parameters, Class<T> expectedType)
+        throws JIRAConnectionException;
 }

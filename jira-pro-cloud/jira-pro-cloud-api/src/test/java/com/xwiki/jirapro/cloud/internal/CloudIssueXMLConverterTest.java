@@ -55,9 +55,9 @@ class CloudIssueXMLConverterTest
         this.searchResult = new ObjectMapper().readTree(getClass().getResourceAsStream("/cloud-search.json"));
     }
 
-    private List<Element> convert(int limit)
+    private List<Element> convert()
     {
-        Document document = this.converter.convert(List.of(this.searchResult), SITE_URL, limit);
+        Document document = this.converter.convert(List.of(this.searchResult), SITE_URL);
 
         assertEquals("rss", document.getRootElement().getName());
         return document.getRootElement().getChild("channel").getChildren("item");
@@ -71,7 +71,7 @@ class CloudIssueXMLConverterTest
     @Test
     void convertStandardFields()
     {
-        Element item = convert(10).get(0);
+        Element item = convert().get(0);
 
         assertEquals("[TEST-1] First issue", item.getChildText("title"));
         assertEquals("https://mysite.atlassian.net/browse/TEST-1", item.getChildText("link"));
@@ -91,6 +91,7 @@ class CloudIssueXMLConverterTest
             item.getChild("status").getAttributeValue("iconUrl"));
         assertEquals("Fixed", item.getChildText("resolution"));
         assertEquals("1", item.getChild("resolution").getAttributeValue("id"));
+        assertEquals(1, item.getChild("resolution").getAttributes().size());
         assertEquals("John Doe", item.getChildText("assignee"));
         assertEquals("account-1", item.getChild("assignee").getAttributeValue("accountId"));
         assertEquals("Jane Doe", item.getChildText("reporter"));
@@ -102,7 +103,8 @@ class CloudIssueXMLConverterTest
         assertEquals(List.of("1.0"), texts(item, "version"));
         assertEquals(List.of("1.1", "2.0"), texts(item, "fixVersion"));
         assertEquals(List.of("core"), texts(item, "component"));
-        assertEquals("2007-05-01", item.getChildText("due"));
+        // The due date has no time, it is at midnight UTC since the time zone of the site is unknown.
+        assertEquals("Tue, 1 May 2007 00:00:00 +0000", item.getChildText("due"));
         assertEquals("20", item.getChildText("votes"));
         assertEquals("23", item.getChildText("watches"));
     }
@@ -110,23 +112,41 @@ class CloudIssueXMLConverterTest
     @Test
     void convertCustomFields()
     {
-        List<Element> customFields = convert(10).get(0).getChild("customfields").getChildren("customfield");
+        List<Element> customFields = convert().get(0).getChild("customfields").getChildren("customfield");
 
-        // The custom fields without value or with an unknown structure are skipped.
+        // The custom fields without value or with an unknown structure are skipped. The rich text (ADF in the
+        // search API v3) is taken from the rendered fields, while the dates are converted from the raw values.
         assertEquals(
             List.of("Text field=Some text", "Number field=1.5", "Select field=Option A",
                 "Multi select field=One, Two", "User field=Jack Doe", "Date field=Tue, 17 Aug 2004 15:03:23 -0700",
-                "Rich text field=<p>Rich <i>text</i></p>"),
+                "Rich text field=<p>Rich <i>text</i></p>", "Cascading select field=Parent\nChild",
+                "Date picker field=Fri, 20 Aug 2004 00:00:00 +0000"),
             customFields.stream().map(customField -> customField.getChildText("customfieldname") + "="
-                + customField.getChild("customfieldvalues").getChildText("customfieldvalue"))
-                .collect(Collectors.toList()));
+                + customField.getChild("customfieldvalues").getValue()).collect(Collectors.toList()));
         assertEquals("customfield_10010", customFields.get(0).getAttributeValue("id"));
+    }
+
+    @Test
+    void convertCascadingSelect()
+    {
+        Element customField = convert().get(0).getChild("customfields").getChildren("customfield").stream()
+            .filter(field -> "customfield_10022".equals(field.getAttributeValue("id"))).findFirst().orElseThrow();
+
+        // One value per level, as in JIRA Data Center.
+        List<Element> values = customField.getChild("customfieldvalues").getChildren("customfieldvalue");
+        assertEquals(2, values.size());
+        assertEquals("Parent", values.get(0).getText());
+        assertEquals("200", values.get(0).getAttributeValue("key"));
+        assertEquals("", values.get(0).getAttributeValue("cascade-level"));
+        assertEquals("Child", values.get(1).getText());
+        assertEquals("201", values.get(1).getAttributeValue("key"));
+        assertEquals("1", values.get(1).getAttributeValue("cascade-level"));
     }
 
     @Test
     void convertWhenFieldsAreMissing()
     {
-        List<Element> items = convert(10);
+        List<Element> items = convert();
         assertEquals(3, items.size());
 
         Element item = items.get(1);
@@ -151,7 +171,9 @@ class CloudIssueXMLConverterTest
         assertEquals("", item.getChildText("description"));
         assertEquals("", item.getChildText("due"));
         assertEquals("0", item.getChildText("votes"));
-        assertTrue(item.getChild("customfields").getChildren().isEmpty());
+        // A text having the format of a date but not a valid date is kept as is.
+        assertEquals("2024-13-45", item.getChild("customfields").getChild("customfield")
+            .getChild("customfieldvalues").getChildText("customfieldvalue"));
 
         // An issue with almost no field.
         item = items.get(2);
@@ -161,15 +183,12 @@ class CloudIssueXMLConverterTest
     }
 
     @Test
-    void convertWithLimit()
+    void convertSeveralPages()
     {
-        // The limit applies over all the pages of results.
-        Document document =
-            this.converter.convert(List.of(this.searchResult, this.searchResult), SITE_URL, 4);
+        Document document = this.converter.convert(List.of(this.searchResult, this.searchResult), SITE_URL);
 
-        assertEquals(List.of("TEST-1", "TEST-2", "TEST-3", "TEST-1"),
+        assertEquals(List.of("TEST-1", "TEST-2", "TEST-3", "TEST-1", "TEST-2", "TEST-3"),
             document.getRootElement().getChild("channel").getChildren("item").stream()
                 .map(item -> item.getChildText("key")).collect(Collectors.toList()));
-        assertTrue(convert(0).isEmpty());
     }
 }

@@ -23,15 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
-import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
-import org.xwiki.contrib.jira.macro.JIRAGadgetType;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,15 +36,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xwiki.jirapro.cloud.internal.CloudJIRARestClient;
 
 /**
- * Computes the data of the chart macros for a JIRA Cloud instance, which has no gadget REST resources: the issues of
- * the chart are searched and aggregated here, into the JSON format of the JIRA Data Center gadget resources.
+ * Searches the issues of a chart and aggregates them, into the JSON format of the JIRA Data Center gadget resource of
+ * the chart. The aggregation is left to each chart.
  *
  * @version $Id$
  * @since 1.1.0
  */
-@Component(roles = CloudChartDataProvider.class)
-@Singleton
-public class CloudChartDataProvider
+public abstract class AbstractCloudChartBuilder implements CloudChartBuilder
 {
     /**
      * The maximum number of issues a chart can be computed on. They are fetched by pages of 100, so it's 50 requests.
@@ -65,34 +59,15 @@ public class CloudChartDataProvider
     @Inject
     private CloudJIRARestClient restClient;
 
-    @Inject
-    private PieChartBuilder pieChartBuilder;
-
-    @Inject
-    private CreatedVsResolvedChartBuilder createdVsResolvedChartBuilder;
-
-    @Inject
-    private BiDimensionalGridChartBuilder biDimensionalGridChartBuilder;
-
-    /**
-     * @param server the JIRA server
-     * @param type the chart
-     * @param parameters the query parameters of the JIRA Data Center gadget REST resource of the chart
-     * @param expectedType the type in which to convert the JSON data
-     * @param <T> the type in which to convert the JSON data
-     * @return the data of the chart, in the JSON format of the gadget REST resource
-     * @throws JIRAConnectionException if a request fails, or a {@link JIRABadRequestException} if the chart can't be
-     *     computed with these parameters
-     */
-    public <T> T fetch(JIRAServer server, JIRAGadgetType type, List<NameValuePair> parameters, Class<T> expectedType)
+    @Override
+    public <T> T fetch(JIRAServer server, List<NameValuePair> parameters, Class<T> expectedType)
         throws JIRAConnectionException
     {
         CloudChartQuery query = new CloudChartQuery(parameters);
-        CloudChartBuilder builder = getBuilder(type);
-        String siteURL = StringUtils.removeEnd(server.getURL(), "/");
+        String siteURL = server.getURL();
 
-        List<JsonNode> issues = searchIssues(server, builder.getJQL(query), builder.getFields(query));
-        ObjectNode data = builder.build(issues, query, siteURL);
+        List<JsonNode> issues = searchIssues(server, getJQL(query), getFields(query));
+        ObjectNode data = build(issues, query, siteURL);
         if (query.getFilterId() != null) {
             JsonNode filter = this.restClient.getFilter(server, query.getFilterId());
             data.put(FILTER_TITLE, filter.path("name").asText(query.getFilterId()));
@@ -105,17 +80,32 @@ public class CloudChartDataProvider
         return OBJECT_MAPPER.convertValue(data, expectedType);
     }
 
-    private CloudChartBuilder getBuilder(JIRAGadgetType type)
+    /**
+     * @param query the query of the chart
+     * @return the JQL query selecting the issues needed to compute the chart
+     */
+    public String getJQL(CloudChartQuery query)
     {
-        switch (type) {
-            case PIE_CHART:
-                return this.pieChartBuilder;
-            case CREATED_VS_RESOLVED:
-                return this.createdVsResolvedChartBuilder;
-            default:
-                return this.biDimensionalGridChartBuilder;
-        }
+        return query.getJQL();
     }
+
+    /**
+     * @param query the query of the chart
+     * @return the fields of the issues needed to compute the chart
+     * @throws JIRABadRequestException if the chart parameters are not supported
+     */
+    public abstract List<String> getFields(CloudChartQuery query) throws JIRABadRequestException;
+
+    /**
+     * @param issues the issues matching {@link #getJQL(CloudChartQuery)}, with the fields of
+     *     {@link #getFields(CloudChartQuery)}
+     * @param query the query of the chart
+     * @param siteURL the URL of the JIRA Cloud site, used to build the links to the issues
+     * @return the data of the chart, without the filter title and URL
+     * @throws JIRABadRequestException if the chart parameters are not supported
+     */
+    public abstract ObjectNode build(List<JsonNode> issues, CloudChartQuery query, String siteURL)
+        throws JIRABadRequestException;
 
     private List<JsonNode> searchIssues(JIRAServer server, String jql, List<String> fields)
         throws JIRAConnectionException

@@ -72,7 +72,8 @@ public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
     @Override
     public String getAPIBaseURL(JIRAServer server) throws JIRAConnectionException
     {
-        String siteURL = StringUtils.removeEnd(server.getURL(), SLASH);
+        // JIRAServer removes the trailing slash, so the URL can be compared with the ones of the accessible resources.
+        String siteURL = server.getURL();
         if (server.getJiraAuthenticator().filter(JIRAOAuthAuthenticator.class::isInstance).isEmpty()) {
             return siteURL;
         }

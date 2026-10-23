@@ -21,22 +21,31 @@ package com.xwiki.jirapro.cloud.internal;
 
 import java.util.List;
 
+import javax.inject.Named;
+import javax.inject.Provider;
+
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.jdom2.Document;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.jira.config.JIRAServer;
+import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 import org.xwiki.contrib.jira.macro.JIRAGadgetType;
 import org.xwiki.test.junit5.mockito.ComponentTest;
+import org.xwiki.test.junit5.mockito.InjectComponentManager;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
 import org.xwiki.test.junit5.mockito.MockComponent;
+import org.xwiki.test.mockito.MockitoComponentManager;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xwiki.jirapro.cloud.internal.chart.CloudChartDataProvider;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 /**
@@ -61,9 +70,23 @@ class CloudJIRAConnectorTest
     private CloudIssueXMLConverter converter;
 
     @MockComponent
-    private CloudChartDataProvider chartDataProvider;
+    @Named("context")
+    private Provider<ComponentManager> contextComponentManagerProvider;
+
+    @MockComponent
+    @Named("PIE_CHART")
+    private CloudChartBuilder pieChartBuilder;
+
+    @InjectComponentManager
+    private MockitoComponentManager componentManager;
 
     private final JIRAServer server = new JIRAServer("https://mysite.atlassian.net/", "id", null, "cloud");
+
+    @BeforeEach
+    void setUp()
+    {
+        when(this.contextComponentManagerProvider.get()).thenReturn(this.componentManager);
+    }
 
     @Test
     void searchIssues() throws Exception
@@ -71,7 +94,7 @@ class CloudJIRAConnectorTest
         List<JsonNode> searchResults = List.of(new ObjectMapper().createObjectNode());
         when(this.restClient.searchIssues(this.server, JQL, FIELDS, EXPAND, 10)).thenReturn(searchResults);
         Document document = new Document();
-        when(this.converter.convert(searchResults, "https://mysite.atlassian.net", 10)).thenReturn(document);
+        when(this.converter.convert(searchResults, "https://mysite.atlassian.net")).thenReturn(document);
 
         assertSame(document, this.connector.searchIssues(this.server, JQL, 10));
     }
@@ -82,7 +105,7 @@ class CloudJIRAConnectorTest
         List<JsonNode> searchResults = List.of(new ObjectMapper().createObjectNode());
         when(this.restClient.searchIssues(this.server, JQL, FIELDS, EXPAND, 1000)).thenReturn(searchResults);
         Document document = new Document();
-        when(this.converter.convert(searchResults, "https://mysite.atlassian.net", 1000)).thenReturn(document);
+        when(this.converter.convert(searchResults, "https://mysite.atlassian.net")).thenReturn(document);
 
         // A default limit is applied.
         assertSame(document, this.connector.searchIssues(this.server, JQL, -1));
@@ -100,10 +123,21 @@ class CloudJIRAConnectorTest
     void fetchGadgetData() throws Exception
     {
         List<NameValuePair> parameters = List.of(new BasicNameValuePair("jql", JQL));
-        when(this.chartDataProvider.fetch(this.server, JIRAGadgetType.PIE_CHART, parameters, String.class))
-            .thenReturn("data");
+        when(this.pieChartBuilder.fetch(this.server, parameters, String.class)).thenReturn("data");
 
+        // The builder of the chart is the one named after its gadget type.
         assertEquals("data", this.connector.fetchGadgetData(this.server, JIRAGadgetType.PIE_CHART, parameters,
             String.class));
+    }
+
+    @Test
+    void fetchGadgetDataWithoutBuilder()
+    {
+        JIRAConnectionException exception = assertThrows(JIRAConnectionException.class,
+            () -> this.connector.fetchGadgetData(this.server, JIRAGadgetType.CREATED_VS_RESOLVED, List.of(),
+                String.class));
+
+        assertEquals("The chart [CREATED_VS_RESOLVED] is not supported for JIRA Cloud instances.",
+            exception.getMessage());
     }
 }

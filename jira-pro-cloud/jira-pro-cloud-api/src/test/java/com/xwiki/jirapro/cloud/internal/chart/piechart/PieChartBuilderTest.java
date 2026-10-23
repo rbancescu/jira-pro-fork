@@ -17,10 +17,8 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.cloud.internal.chart;
+package com.xwiki.jirapro.cloud.internal.chart.piechart;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,8 +28,9 @@ import org.xwiki.contrib.jira.charts.internal.piechart.source.JIRAPieChartData;
 import org.xwiki.contrib.jira.charts.internal.piechart.source.JIRAPieChartDataSource;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,14 +44,6 @@ class PieChartBuilderTest
 
     private final PieChartBuilder builder = new PieChartBuilder();
 
-    static List<JsonNode> getIssues() throws IOException
-    {
-        List<JsonNode> issues = new ArrayList<>();
-        new ObjectMapper().readTree(PieChartBuilderTest.class.getResourceAsStream("/cloud-chart-issues.json"))
-            .forEach(issues::add);
-        return issues;
-    }
-
     private static CloudChartQuery query(String statType)
     {
         return new CloudChartQuery(
@@ -62,7 +53,7 @@ class PieChartBuilderTest
     private JIRAPieChartDataSource build(String statType) throws Exception
     {
         // Unknown properties make the conversion fail, so that the format is checked strictly.
-        return new ObjectMapper().convertValue(this.builder.build(getIssues(), query(statType), SITE_URL),
+        return new ObjectMapper().convertValue(this.builder.build(CloudChartIssues.get(), query(statType), SITE_URL),
             JIRAPieChartDataSource.class);
     }
 

@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.cloud.internal.chart;
+package com.xwiki.jirapro.cloud.internal.chart.createdvsresolved;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -38,6 +38,8 @@ import org.xwiki.contrib.jira.charts.internal.createdvsresolved.source.JIRACreat
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,7 +79,7 @@ class CreatedVsResolvedChartBuilderTest
     {
         // Unknown properties make the conversion fail, so that the format is checked strictly.
         return new ObjectMapper().convertValue(
-            this.builder.build(PieChartBuilderTest.getIssues(), query, "https://mysite.atlassian.net"),
+            this.builder.build(CloudChartIssues.get(), query, "https://mysite.atlassian.net"),
             JIRACreatedVsResolvedDataSource.class);
     }
 

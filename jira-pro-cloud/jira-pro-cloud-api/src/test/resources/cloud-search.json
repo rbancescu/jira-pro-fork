@@ -40,7 +40,9 @@
         "customfield_10016": null,
         "customfield_10017": [],
         "customfield_10020": {"type": "doc", "version": 1, "content": []},
-        "customfield_10021": {"unknown": "structure"}
+        "customfield_10021": {"unknown": "structure"},
+        "customfield_10022": {"id": "200", "value": "Parent", "child": {"id": "201", "value": "Child"}},
+        "customfield_10023": "2004-08-20"
       }
     },
     {
@@ -61,7 +63,8 @@
         "fixVersions": [],
         "components": [],
         "duedate": null,
-        "description": null
+        "description": null,
+        "customfield_10010": "2024-13-45"
       }
     },
     {
@@ -77,7 +80,9 @@
     "customfield_10013": "Multi select field",
     "customfield_10014": "User field",
     "customfield_10015": "Date field",
-    "customfield_10020": "Rich text field"
+    "customfield_10020": "Rich text field",
+    "customfield_10022": "Cascading select field",
+    "customfield_10023": "Date picker field"
   },
   "nextPageToken": "token",
   "isLast": false

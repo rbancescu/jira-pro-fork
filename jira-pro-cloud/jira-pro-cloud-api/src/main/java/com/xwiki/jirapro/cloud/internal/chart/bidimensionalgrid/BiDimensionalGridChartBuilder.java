@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.cloud.internal.chart;
+package com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.math.NumberUtils;
@@ -38,6 +39,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.xwiki.jirapro.cloud.internal.chart.AbstractCloudChartBuilder;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
+import com.xwiki.jirapro.cloud.internal.chart.CloudStatisticType;
+import com.xwiki.jirapro.cloud.internal.chart.CloudStatisticValue;
 
 /**
  * Computes the data of the two-dimensional grid, in the JSON format of the {@code twodimensionalfilterstats/generate}
@@ -47,9 +52,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @version $Id$
  * @since 1.1.0
  */
-@Component(roles = BiDimensionalGridChartBuilder.class)
+@Component
+@Named("BIDIMENSIONAL_CHARTS")
 @Singleton
-public class BiDimensionalGridChartBuilder implements CloudChartBuilder
+public class BiDimensionalGridChartBuilder extends AbstractCloudChartBuilder
 {
     private static final String CELLS = "cells";
 

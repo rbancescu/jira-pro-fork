@@ -28,8 +28,6 @@ import org.xwiki.contrib.jira.charts.internal.createdvsresolved.source.JIRACreat
 import org.xwiki.contrib.jira.charts.internal.piechart.source.JIRAPieChartDataSource;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
-import org.xwiki.contrib.jira.macro.JIRAGadgetType;
-import org.xwiki.test.annotation.ComponentList;
 import org.xwiki.test.junit5.mockito.ComponentTest;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
 import org.xwiki.test.junit5.mockito.MockComponent;
@@ -39,6 +37,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xwiki.jirapro.cloud.internal.CloudJIRARestClient;
+import com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid.BiDimensionalGridChartBuilder;
+import com.xwiki.jirapro.cloud.internal.chart.createdvsresolved.CreatedVsResolvedChartBuilder;
+import com.xwiki.jirapro.cloud.internal.chart.piechart.PieChartBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,17 +51,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link CloudChartDataProvider}.
+ * Unit tests for {@link AbstractCloudChartBuilder}, through the builder of each chart.
  */
 @ComponentTest
-@ComponentList({ PieChartBuilder.class, CreatedVsResolvedChartBuilder.class,
-    BiDimensionalGridChartBuilder.class })
-class CloudChartDataProviderTest
+class AbstractCloudChartBuilderTest
 {
     private static final String SITE_URL = "https://mysite.atlassian.net";
 
     @InjectMockComponents
-    private CloudChartDataProvider provider;
+    private PieChartBuilder pieChartBuilder;
+
+    @InjectMockComponents
+    private CreatedVsResolvedChartBuilder createdVsResolvedChartBuilder;
+
+    @InjectMockComponents
+    private BiDimensionalGridChartBuilder biDimensionalGridChartBuilder;
 
     @MockComponent
     private CloudJIRARestClient restClient;
@@ -83,7 +88,7 @@ class CloudChartDataProviderTest
         when(this.restClient.searchIssues(this.server, "project = TEST", List.of("status"), null, 5001))
             .thenReturn(List.of(searchResult(2), searchResult(1)));
 
-        JIRAPieChartDataSource data = this.provider.fetch(this.server, JIRAGadgetType.PIE_CHART,
+        JIRAPieChartDataSource data = this.pieChartBuilder.fetch(this.server,
             List.of(new BasicNameValuePair("jql", "project = TEST"), new BasicNameValuePair("statType", "statuses")),
             JIRAPieChartDataSource.class);
 
@@ -102,7 +107,7 @@ class CloudChartDataProviderTest
         when(this.restClient.getFilter(this.server, "10000"))
             .thenReturn(new ObjectMapper().readTree("{\"name\":\"My filter\"}"));
 
-        JIRAPieChartDataSource data = this.provider.fetch(this.server, JIRAGadgetType.PIE_CHART,
+        JIRAPieChartDataSource data = this.pieChartBuilder.fetch(this.server,
             List.of(new BasicNameValuePair("filterId", "10000"), new BasicNameValuePair("statType", "statuses")),
             JIRAPieChartDataSource.class);
 
@@ -118,7 +123,7 @@ class CloudChartDataProviderTest
             .thenReturn(List.of(searchResult(0)));
         when(this.restClient.getFilter(this.server, "10000")).thenReturn(new ObjectMapper().readTree("{}"));
 
-        JIRACreatedVsResolvedDataSource data = this.provider.fetch(this.server, JIRAGadgetType.CREATED_VS_RESOLVED,
+        JIRACreatedVsResolvedDataSource data = this.createdVsResolvedChartBuilder.fetch(this.server,
             List.of(new BasicNameValuePair("jql", "filter=10000"), new BasicNameValuePair("period", "daily"),
                 new BasicNameValuePair("daysprevious", "7")),
             JIRACreatedVsResolvedDataSource.class);
@@ -135,7 +140,7 @@ class CloudChartDataProviderTest
             .thenReturn(List.of(searchResult(1)));
 
         JIRABiDimensionalGridChartJIRADataSource data =
-            this.provider.fetch(this.server, JIRAGadgetType.BIDIMENSIONAL_CHARTS,
+            this.biDimensionalGridChartBuilder.fetch(this.server,
                 List.of(new BasicNameValuePair("filterId", "jql-project = TEST"),
                     new BasicNameValuePair("xstattype", "statuses"), new BasicNameValuePair("ystattype", "assignees")),
                 JIRABiDimensionalGridChartJIRADataSource.class);
@@ -150,7 +155,7 @@ class CloudChartDataProviderTest
             .thenReturn(List.of(searchResult(5000), searchResult(1)));
 
         JIRABadRequestException exception = assertThrows(JIRABadRequestException.class,
-            () -> this.provider.fetch(this.server, JIRAGadgetType.PIE_CHART,
+            () -> this.pieChartBuilder.fetch(this.server,
                 List.of(new BasicNameValuePair("jql", ""), new BasicNameValuePair("statType", "statuses")),
                 JIRAPieChartDataSource.class));
 

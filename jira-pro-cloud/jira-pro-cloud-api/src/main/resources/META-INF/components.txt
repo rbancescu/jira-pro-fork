@@ -3,7 +3,6 @@ com.xwiki.jirapro.cloud.internal.CloudJIRAConnector
 com.xwiki.jirapro.cloud.internal.CloudJIRAHttpClient
 com.xwiki.jirapro.cloud.internal.CloudJIRARestClient
 com.xwiki.jirapro.cloud.internal.DefaultJIRACloudEndpoints
-com.xwiki.jirapro.cloud.internal.chart.BiDimensionalGridChartBuilder
-com.xwiki.jirapro.cloud.internal.chart.CloudChartDataProvider
-com.xwiki.jirapro.cloud.internal.chart.CreatedVsResolvedChartBuilder
-com.xwiki.jirapro.cloud.internal.chart.PieChartBuilder
+com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid.BiDimensionalGridChartBuilder
+com.xwiki.jirapro.cloud.internal.chart.createdvsresolved.CreatedVsResolvedChartBuilder
+com.xwiki.jirapro.cloud.internal.chart.piechart.PieChartBuilder

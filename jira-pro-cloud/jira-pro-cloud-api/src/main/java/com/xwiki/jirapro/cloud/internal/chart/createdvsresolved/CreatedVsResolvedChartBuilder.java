@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.cloud.internal.chart;
+package com.xwiki.jirapro.cloud.internal.chart.createdvsresolved;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.math.NumberUtils;
@@ -44,6 +45,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.xwiki.jirapro.cloud.internal.chart.AbstractCloudChartBuilder;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 /**
  * Computes the data of the created vs resolved chart, in the JSON format of the {@code dateCountInPeriod} gadget REST
@@ -53,9 +56,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @version $Id$
  * @since 1.1.0
  */
-@Component(roles = CreatedVsResolvedChartBuilder.class)
+@Component
+@Named("CREATED_VS_RESOLVED")
 @Singleton
-public class CreatedVsResolvedChartBuilder implements CloudChartBuilder
+public class CreatedVsResolvedChartBuilder extends AbstractCloudChartBuilder
 {
     private static final DateTimeFormatter CLOUD_DATE_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT);

@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.cloud.internal.chart;
+package com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +30,8 @@ import org.xwiki.contrib.jira.charts.internal.bidimensionalgrid.source.JIRABiDim
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
+import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -53,7 +55,7 @@ class BiDimensionalGridChartBuilderTest
     private JIRABiDimensionalGridChartJIRADataSource build(CloudChartQuery query) throws Exception
     {
         // Unknown properties make the conversion fail, so that the format is checked strictly.
-        return new ObjectMapper().convertValue(this.builder.build(PieChartBuilderTest.getIssues(), query, SITE_URL),
+        return new ObjectMapper().convertValue(this.builder.build(CloudChartIssues.get(), query, SITE_URL),
             JIRABiDimensionalGridChartJIRADataSource.class);
     }
 
