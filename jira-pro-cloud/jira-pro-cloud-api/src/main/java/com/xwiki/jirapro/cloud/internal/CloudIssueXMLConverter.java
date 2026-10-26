@@ -69,6 +69,12 @@ public class CloudIssueXMLConverter
 
     private static final Pattern GATEWAY_PATH = Pattern.compile("/ex/jira/[^/]+");
 
+    /**
+     * The icon that JIRA Cloud gives to all the statuses of the workflows without status icons. Since it's the same for
+     * all the statuses, displaying it would hide their names.
+     */
+    private static final String GENERIC_STATUS_ICON_PATH = "/images/icons/statuses/generic.png";
+
     private static final String CUSTOM_FIELD_PREFIX = "customfield_";
 
     private static final String CUSTOM_FIELD_VALUES = "customfieldvalues";
@@ -197,7 +203,7 @@ public class CloudIssueXMLConverter
         Element element = addNamedValue(item, name, value);
         if (element != null) {
             String attributeValue = value.path(attribute).asText(EMPTY);
-            if (!attributeValue.isEmpty() && !(ICON_URL.equals(attribute) && isBaseURL(attributeValue))) {
+            if (!attributeValue.isEmpty() && !(ICON_URL.equals(attribute) && isMissingIcon(attributeValue))) {
                 element.setAttribute(attribute, attributeValue);
             }
         }
@@ -221,9 +227,10 @@ public class CloudIssueXMLConverter
 
     /**
      * A value without icon (e.g. the statuses of the recent workflows) has as icon URL the base URL the request was
-     * sent to: the site URL, or the API gateway URL ({@code https://api.atlassian.com/ex/jira/{cloudId}}).
+     * sent to: the site URL, or the API gateway URL ({@code https://api.atlassian.com/ex/jira/{cloudId}}). The generic
+     * status icon is handled the same way, so that the name of the status is displayed instead.
      */
-    private boolean isBaseURL(String url)
+    private boolean isMissingIcon(String url)
     {
         String path;
         try {
@@ -232,7 +239,7 @@ public class CloudIssueXMLConverter
             return false;
         }
 
-        return path.isEmpty() || GATEWAY_PATH.matcher(path).matches();
+        return path.isEmpty() || GATEWAY_PATH.matcher(path).matches() || path.endsWith(GENERIC_STATUS_ICON_PATH);
     }
 
     private void addResolution(Element item, JsonNode resolution)

@@ -47,7 +47,7 @@ public class CloudChartQuery
     /**
      * The JQL that the created vs resolved chart builds for a saved filter.
      */
-    private static final Pattern FILTER_JQL = Pattern.compile("filter=(.+)");
+    private static final Pattern FILTER_JQL = Pattern.compile("filter=(\\d+)");
 
     /**
      * The {@code ORDER BY} clause ending a JQL query, which can't be followed by another clause.

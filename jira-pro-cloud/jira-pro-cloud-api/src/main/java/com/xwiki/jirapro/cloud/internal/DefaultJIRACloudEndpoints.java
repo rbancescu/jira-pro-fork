@@ -26,15 +26,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.jira.config.JIRAAuthenticator;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.xpn.xwiki.XWikiContext;
 import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
 import com.xwiki.jirapro.oauth.internal.JIRAOAuthAuthenticator;
 
@@ -60,6 +63,12 @@ public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
     @Inject
     private CloudJIRAHttpClient httpClient;
 
+    @Inject
+    private Provider<XWikiContext> contextProvider;
+
+    /**
+     * The cloud ids, by user and site, since the sites a token gives access to are those its user authorized.
+     */
     private final Map<String, String> cloudIds = new ConcurrentHashMap<>();
 
     @Override
@@ -67,11 +76,15 @@ public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
     {
         String siteURL = server.getURL();
 
-        if (!(server.getJiraAuthenticator().orElse(null) instanceof JIRAOAuthAuthenticator)) {
+        // Without token (e.g. a guest, when the authentication isn't required) the site is requested anonymously.
+        JIRAAuthenticator authenticator = server.getJiraAuthenticator().orElse(null);
+        if (!(authenticator instanceof JIRAOAuthAuthenticator)
+            || ((JIRAOAuthAuthenticator) authenticator).getOAuthToken().isEmpty())
+        {
             return siteURL;
         }
 
-        String cacheKey = siteURL.toLowerCase(Locale.ROOT);
+        String cacheKey = this.contextProvider.get().getUserReference() + SLASH + siteURL.toLowerCase(Locale.ROOT);
         String cloudId = this.cloudIds.get(cacheKey);
         if (cloudId == null) {
             cloudId = fetchCloudId(server, siteURL);

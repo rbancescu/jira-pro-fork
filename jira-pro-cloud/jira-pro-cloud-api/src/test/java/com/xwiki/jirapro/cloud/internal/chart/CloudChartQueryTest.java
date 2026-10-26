@@ -111,6 +111,17 @@ class CloudChartQueryTest
     }
 
     @Test
+    void filterJQLWithOtherClauses()
+    {
+        // A query of the user, which isn't the id of a filter.
+        CloudChartQuery query = query("jql", "filter=10000 AND status = Open ORDER BY created");
+
+        assertNull(query.getFilterId());
+        assertEquals("filter=10000 AND status = Open", query.getJQL());
+        assertNull(query("jql", "filter=MyFilter").getFilterId());
+    }
+
+    @Test
     void getSearchURL()
     {
         assertEquals("https://mysite.atlassian.net/issues/?jql=project+%3D+%22A+B%22",

@@ -21,27 +21,34 @@ package com.xwiki.jirapro.cloud.internal;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
+import javax.inject.Provider;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.config.internal.BasicAuthJIRAAuthenticator;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.test.junit5.mockito.ComponentTest;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
 import org.xwiki.test.junit5.mockito.MockComponent;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xpn.xwiki.XWikiContext;
 import com.xwiki.jirapro.oauth.internal.JIRAOAuthAuthenticator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -65,9 +72,33 @@ class DefaultJIRACloudEndpointsTest
     @MockComponent
     private CloudJIRAHttpClient httpClient;
 
+    @MockComponent
+    private Provider<XWikiContext> contextProvider;
+
+    private final XWikiContext context = mock(XWikiContext.class);
+
+    @BeforeEach
+    void setUp()
+    {
+        when(this.contextProvider.get()).thenReturn(this.context);
+        setUser("Alice");
+    }
+
+    private void setUser(String name)
+    {
+        when(this.context.getUserReference()).thenReturn(new DocumentReference("xwiki", "XWiki", name));
+    }
+
     private JIRAServer oauthServer(String url)
     {
-        return new JIRAServer(url, "id", mock(JIRAOAuthAuthenticator.class), "cloud");
+        return oauthServer(url, Optional.of("token"));
+    }
+
+    private JIRAServer oauthServer(String url, Optional<String> token)
+    {
+        JIRAOAuthAuthenticator authenticator = mock(JIRAOAuthAuthenticator.class);
+        when(authenticator.getOAuthToken()).thenReturn(token);
+        return new JIRAServer(url, "id", authenticator, "cloud");
     }
 
     private JsonNode json(String content) throws Exception
@@ -85,7 +116,7 @@ class DefaultJIRACloudEndpointsTest
             this.endpoints.getAPIBaseURL(new JIRAServer("https://mysite.atlassian.net", "id", null, "cloud")));
 
         // The cloud id is only needed for OAuth.
-        verifyNoInteractions(this.httpClient);
+        verify(this.httpClient, never()).getJSON(any(), any(), any());
     }
 
     @Test
@@ -107,11 +138,17 @@ class DefaultJIRACloudEndpointsTest
             .thenReturn(json(ACCESSIBLE_RESOURCES));
 
         assertEquals("https://api.atlassian.com/ex/jira/id-of-mysite", this.endpoints.getAPIBaseURL(server));
-        // Another server instance for the same site, as it happens for another user.
-        assertEquals("https://api.atlassian.com/ex/jira/id-of-mysite",
-            this.endpoints.getAPIBaseURL(oauthServer("https://mysite.atlassian.net/")));
+        // Another server instance for the same site, as it happens for another request of the same user.
+        JIRAServer otherServer = oauthServer("https://mysite.atlassian.net/");
+        when(this.httpClient.getJSON(otherServer, ACCESSIBLE_RESOURCES_URI, JsonNode.class))
+            .thenReturn(json(ACCESSIBLE_RESOURCES));
+        assertEquals("https://api.atlassian.com/ex/jira/id-of-mysite", this.endpoints.getAPIBaseURL(otherServer));
+        verify(this.httpClient, times(1)).getJSON(any(), any(), any());
 
-        verify(this.httpClient, times(1)).getJSON(server, ACCESSIBLE_RESOURCES_URI, JsonNode.class);
+        // Another user may not have authorized the site: the sites of their token are checked.
+        setUser("Bob");
+        assertEquals("https://api.atlassian.com/ex/jira/id-of-mysite", this.endpoints.getAPIBaseURL(otherServer));
+        verify(this.httpClient, times(2)).getJSON(any(), any(), any());
     }
 
     @Test
@@ -133,6 +170,15 @@ class DefaultJIRACloudEndpointsTest
     @Test
     void getAPIBaseURLWhenUserHasNoToken() throws Exception
     {
+        // The site is requested anonymously, e.g. by a guest when the authentication isn't required.
+        assertEquals("https://mysite.atlassian.net",
+            this.endpoints.getAPIBaseURL(oauthServer("https://mysite.atlassian.net", Optional.empty())));
+        verify(this.httpClient, never()).getJSON(any(), any(), any());
+    }
+
+    @Test
+    void getAPIBaseURLWhenTokenIsRefused() throws Exception
+    {
         JIRAServer server = oauthServer("https://mysite.atlassian.net");
         JIRABadRequestException unauthorized = new JIRABadRequestException("Error code = [401]", List.of());
         when(this.httpClient.getJSON(server, ACCESSIBLE_RESOURCES_URI, JsonNode.class))
@@ -142,7 +188,7 @@ class DefaultJIRACloudEndpointsTest
         assertSame(unauthorized,
             assertThrows(JIRAConnectionException.class, () -> this.endpoints.getAPIBaseURL(server)));
 
-        // The failure is not cached: the cloud id is found once the user has a token.
+        // The failure is not cached: the cloud id is found once the user has a valid token.
         assertEquals("https://api.atlassian.com/ex/jira/id-of-mysite", this.endpoints.getAPIBaseURL(server));
     }
 }

@@ -183,6 +183,21 @@ class CloudIssueXMLConverterTest
     }
 
     @Test
+    void convertWhenStatusHasGenericIcon() throws Exception
+    {
+        JsonNode result = new ObjectMapper().readTree("{\"issues\":[{\"key\":\"TEST-4\",\"fields\":{"
+            + "\"status\":{\"id\":\"3\",\"name\":\"Done\","
+            + "\"iconUrl\":\"https://mysite.atlassian.net/images/icons/statuses/generic.png\"}}}]}");
+
+        Element item = this.converter.convert(List.of(result), SITE_URL).getRootElement().getChild("channel")
+            .getChild("item");
+
+        // The generic icon, the same for all the statuses, is dropped so that the name is displayed.
+        assertEquals("Done", item.getChildText("status"));
+        assertNull(item.getChild("status").getAttributeValue("iconUrl"));
+    }
+
+    @Test
     void convertSeveralPages()
     {
         Document document = this.converter.convert(List.of(this.searchResult, this.searchResult), SITE_URL);
