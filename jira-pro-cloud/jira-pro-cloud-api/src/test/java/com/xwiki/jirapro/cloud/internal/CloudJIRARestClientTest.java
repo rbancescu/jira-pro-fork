@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.xwiki.contrib.jira.config.JIRAServer;
+import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 import org.xwiki.test.junit5.mockito.ComponentTest;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
@@ -163,9 +164,20 @@ class CloudJIRARestClientTest
     void getFilter() throws Exception
     {
         JsonNode filter = new ObjectMapper().readTree("{\"name\":\"My filter\"}");
-        when(this.httpClient.getJSON(this.server, URI.create(BASE_URL + "/rest/api/3/filter/a%2Fb"),
+        when(this.httpClient.getJSON(this.server, URI.create(BASE_URL + "/rest/api/3/filter/10000"),
             JsonNode.class)).thenReturn(filter);
 
-        assertEquals(filter, this.restClient.getFilter(this.server, "a/b"));
+        assertEquals(filter, this.restClient.getFilter(this.server, "10000"));
+    }
+
+    @Test
+    void getFilterWithInvalidId() throws Exception
+    {
+        JIRABadRequestException exception =
+            assertThrows(JIRABadRequestException.class, () -> this.restClient.getFilter(this.server, "../myself"));
+
+        assertEquals("Invalid filter id [../myself].", exception.getMessage());
+        assertEquals(List.of("Invalid filter id [../myself]."), exception.getExtractedMessages());
+        verifyNoInteractions(this.httpClient);
     }
 }

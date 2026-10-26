@@ -50,14 +50,8 @@ import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
 @Singleton
 public class CloudJIRAConnector implements JIRAConnector
 {
-    /**
-     * The instance type handled by this connector.
-     */
     public static final String HINT = "cloud";
 
-    /**
-     * The maximum number of issues to get when no limit is asked.
-     */
     private static final int DEFAULT_LIMIT = 1000;
 
     @Inject
@@ -74,6 +68,7 @@ public class CloudJIRAConnector implements JIRAConnector
     public Document searchIssues(JIRAServer server, String jql, int maxCount) throws JIRAConnectionException
     {
         int limit = maxCount > -1 ? maxCount : DEFAULT_LIMIT;
+
         List<JsonNode> searchResults =
             this.restClient.searchIssues(server, jql, List.of("*navigable"), "renderedFields,names", limit);
 

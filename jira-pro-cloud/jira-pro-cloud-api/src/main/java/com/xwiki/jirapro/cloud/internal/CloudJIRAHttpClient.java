@@ -119,10 +119,10 @@ public class CloudJIRAHttpClient
         server.getJiraAuthenticator().ifPresent(authenticator ->
             authenticator.authenticateInHttpClient(context, request, targetHost));
 
-        // The system properties are used for the proxy settings, as for the requests of the JIRA macros.
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties()
             .setUserAgent(USER_AGENT).build();
-            CloseableHttpResponse response = httpClient.execute(targetHost, request, context.build())) {
+             CloseableHttpResponse response = httpClient.execute(targetHost, request, context.build()))
+        {
             String content = getContent(response.getEntity());
             int status = response.getCode();
             if (status >= 200 && status < 300) {
@@ -133,7 +133,6 @@ public class CloudJIRAHttpClient
             String message = String.format("Error code = [%s], Error message = [%s] URL = [%s]", status,
                 String.join(", ", errorMessages), uri);
             if (status == 400 || status == 401) {
-                // An invalid query, missing rights or a missing OAuth token: the macros display the error inline.
                 throw new JIRABadRequestException(message, errorMessages);
             }
             throw new JIRAConnectionException(message);

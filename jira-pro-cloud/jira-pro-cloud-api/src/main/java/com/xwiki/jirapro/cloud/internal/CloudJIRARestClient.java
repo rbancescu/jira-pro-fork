@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.net.URIBuilder;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.jira.config.JIRAServer;
+import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,10 +48,6 @@ import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
 @Singleton
 public class CloudJIRARestClient
 {
-    /**
-     * The maximum number of issues JIRA Cloud returns in a page when fields other than the id and the key are
-     * requested.
-     */
     private static final int PAGE_SIZE = 100;
 
     private static final String NEXT_PAGE_TOKEN = "nextPageToken";
@@ -117,8 +114,6 @@ public class CloudJIRARestClient
      */
     public Integer countIssues(JIRAServer server, String jql) throws JIRAConnectionException
     {
-        // JIRA Cloud offers no count resource answering to GET requests: this one only accepts POST requests, and the
-        // search resources don't return the total any more.
         URI uri = build(createURIBuilder(getURL(server, "/rest/api/3/search/approximate-count")));
         JsonNode result = this.httpClient.postJSON(server, uri, Map.of(JQL, jql), JsonNode.class);
 
@@ -131,14 +126,19 @@ public class CloudJIRARestClient
      * @param server the JIRA server
      * @param filterId the identifier of the filter
      * @return the filter, as returned by the filter REST resource
-     * @throws JIRAConnectionException if the request fails
+     * @throws JIRAConnectionException if the request fails, and more specifically a {@link JIRABadRequestException}
+     *     when the filter identifier is not a number
      */
     public JsonNode getFilter(JIRAServer server, String filterId) throws JIRAConnectionException
     {
-        URIBuilder builder = createURIBuilder(getURL(server, "/rest/api/3/filter"));
-        builder.appendPathSegments(filterId);
+        if (!StringUtils.isNumeric(filterId)) {
+            String message = String.format("Invalid filter id [%s].", filterId);
+            throw new JIRABadRequestException(message, List.of(message));
+        }
 
-        return this.httpClient.getJSON(server, build(builder), JsonNode.class);
+        URI uri = build(createURIBuilder(getURL(server, "/rest/api/3/filter/" + filterId)));
+
+        return this.httpClient.getJSON(server, uri, JsonNode.class);
     }
 
     private String getURL(JIRAServer server, String path) throws JIRAConnectionException

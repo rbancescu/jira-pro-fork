@@ -48,33 +48,26 @@ import com.xwiki.jirapro.oauth.internal.JIRAOAuthAuthenticator;
 @Singleton
 public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
 {
-    /**
-     * The Atlassian API gateway, where the requests authenticated with an OAuth token must be sent.
-     */
     private static final String GATEWAY_URL = "https://api.atlassian.com";
 
-    /**
-     * Lists the sites that the OAuth token gives access to.
-     */
     private static final URI ACCESSIBLE_RESOURCES_URI = URI.create(GATEWAY_URL + "/oauth/token/accessible-resources");
 
     private static final String SLASH = "/";
 
+    private static final String SITE_NOT_AUTHORIZED_MESSAGE =
+        "The Jira Cloud site [%s] is not among the sites you authorized. Authorize again and select this site.";
+
     @Inject
     private CloudJIRAHttpClient httpClient;
 
-    /**
-     * The cloud id of the sites, by site URL. The cloud id of a site is the same for all the users and never changes.
-     * It's not a problem to share it between users since the gateway checks the token of the user on each request.
-     */
     private final Map<String, String> cloudIds = new ConcurrentHashMap<>();
 
     @Override
     public String getAPIBaseURL(JIRAServer server) throws JIRAConnectionException
     {
-        // JIRAServer removes the trailing slash, so the URL can be compared with the ones of the accessible resources.
         String siteURL = server.getURL();
-        if (server.getJiraAuthenticator().filter(JIRAOAuthAuthenticator.class::isInstance).isEmpty()) {
+
+        if (!(server.getJiraAuthenticator().orElse(null) instanceof JIRAOAuthAuthenticator)) {
             return siteURL;
         }
 
@@ -90,8 +83,6 @@ public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
 
     private String fetchCloudId(JIRAServer server, String siteURL) throws JIRAConnectionException
     {
-        // The request is authenticated with the OAuth token of the current user. When the user has no token the
-        // gateway refuses the request, which is reported as a JIRABadRequestException by the HTTP client.
         JsonNode sites = this.httpClient.getJSON(server, ACCESSIBLE_RESOURCES_URI, JsonNode.class);
         for (JsonNode site : sites) {
             String url = StringUtils.removeEnd(site.path("url").asText(), SLASH);
@@ -101,8 +92,7 @@ public class DefaultJIRACloudEndpoints implements JIRACloudEndpoints
             }
         }
 
-        String message = String.format("The Jira Cloud site [%s] is not among the sites you authorized. Authorize "
-            + "again and select this site.", siteURL);
+        String message = String.format(SITE_NOT_AUTHORIZED_MESSAGE, siteURL);
         throw new JIRABadRequestException(message, List.of(message));
     }
 }
