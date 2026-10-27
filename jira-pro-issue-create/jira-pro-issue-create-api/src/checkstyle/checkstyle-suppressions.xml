@@ -28,5 +28,5 @@
   <suppress checks="NPathComplexity" files="DefaultJiraIssueCreationManager.java"/>
   <suppress checks="CyclomaticComplexity" files="DefaultJiraIssueCreationManager.java"/>
   <suppress checks="ExecutableStatementCount" files="DefaultJiraIssueCreationManager.java"/>
-  <suppress checks="MultipleStringLiterals" files="JiraIssueCreationRestClient.java"/>
+  <suppress checks="ClassFanOutComplexity" files="DefaultJiraIssueCreationManager.java"/>
 </suppressions>

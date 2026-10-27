@@ -50,6 +50,9 @@ import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
 @Singleton
 public class CloudJIRAConnector implements JIRAConnector
 {
+    /**
+     * The hint used to identify this component.
+     */
     public static final String HINT = "cloud";
 
     private static final int DEFAULT_LIMIT = 1000;

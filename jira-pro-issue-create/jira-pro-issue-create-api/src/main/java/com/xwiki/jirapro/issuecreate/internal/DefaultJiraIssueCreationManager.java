@@ -31,16 +31,23 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import javax.mail.internet.InternetAddress;
 
-import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.jira.config.JIRAAuthenticator;
 import org.xwiki.contrib.jira.config.JIRAConfiguration;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.config.internal.BasicAuthJIRAAuthenticator;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.text.StringUtils;
+import org.xwiki.user.CurrentUserReference;
+import org.xwiki.user.UserProperties;
+import org.xwiki.user.UserPropertiesResolver;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -89,11 +96,22 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
 
     private static final String VALUES = "values";
 
+    private static final int PROJECT_SUGGESTIONS = 6;
+
+    private static final int USER_SUGGESTIONS = 21;
+
     @Inject
     private JIRAConfiguration jiraConfiguration;
 
+    /**
+     * Use the context component manager since the clients can be provided by extensions installed on a wiki.
+     */
     @Inject
-    private Logger logger;
+    @Named("context")
+    private Provider<ComponentManager> componentManagerProvider;
+
+    @Inject
+    private UserPropertiesResolver userPropertiesResolver;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -125,8 +143,7 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
      */
     public String getAuthenticatorID(String instanceId)
     {
-        JIRAServer jiraServer = jiraConfiguration.getJIRAServers().get(instanceId);
-        Optional<JIRAAuthenticator> optionalAuthenticator = jiraServer.getJiraAuthenticator();
+        Optional<JIRAAuthenticator> optionalAuthenticator = getJIRAServer(instanceId).getJiraAuthenticator();
 
         if (optionalAuthenticator.isPresent()) {
             JIRAAuthenticator authenticator = optionalAuthenticator.get();
@@ -143,50 +160,24 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
      */
     public String suggestProject(String instanceId, String text)
     {
-        String lowercaseText = text.toLowerCase();
-
         List<Map<String, Object>> res = new ArrayList<>();
 
-        JsonNode jsonTree = asTree(getJiraIssueCreationRestClient(instanceId).getProjects());
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        JsonNode jsonTree =
+            asTree(getJiraIssueCreationRestClient(jiraServer).getProjects(jiraServer, text, PROJECT_SUGGESTIONS));
         if (!jsonTree.isArray()) {
             throw new JiraIssueCreationException("Expected a JSON array in Jira response.");
         }
 
         for (JsonNode projectJSON : jsonTree) {
-            if (res.size() > 5) {
-                break;
-            }
-
             Map<String, Object> resEntry = new TreeMap<>();
 
-            String name = projectJSON.get(NAME).asText();
-            String key = projectJSON.get(KEY).asText();
-
-            if (!(name.toLowerCase().contains(lowercaseText) || key.toLowerCase().contains(lowercaseText))) {
-                continue;
-            }
-
-            // Check for issue creation permission.
-            try {
-                getJiraIssueCreationRestClient(instanceId).getIssueTypes(key);
-            } catch (JiraIssueCreationException e) {
-                continue;
-            }
-
-            String iconURL = null;
-            JsonNode avatarUrls = projectJSON.get(AVATAR_URLS);
-            if (avatarUrls != null) {
-                for (JsonNode iconJSON : avatarUrls) {
-                    iconURL = iconJSON.asText();
-                    break;
-                }
-            }
+            String name = projectJSON.path(NAME).asText("");
+            String key = projectJSON.path(KEY).asText("");
 
             resEntry.put(LABEL, name + ' ' + '(' + key + ')');
             resEntry.put(VALUE, key);
-            if (iconURL != null) {
-                resEntry.put(ICON, Collections.singletonMap(URL, iconURL));
-            }
+            putIcon(resEntry, projectJSON);
 
             res.add(resEntry);
         }
@@ -202,7 +193,8 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
     public String suggestIssueType(String instanceId, String project, String text)
     {
 
-        JsonNode jsonTree = asTree(getJiraIssueCreationRestClient(instanceId).getIssueTypes(project));
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        JsonNode jsonTree = asTree(getJiraIssueCreationRestClient(jiraServer).getIssueTypes(jiraServer, project));
 
         JsonNode valuesTree = jsonTree.get(VALUES);
         if (valuesTree == null) {
@@ -216,28 +208,19 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
         List<Map<String, Object>> res = new ArrayList<>();
 
         for (JsonNode issueTypeJSON : valuesTree) {
-            Map<String, Object> resEntry = new TreeMap<>();
-
-            String name = issueTypeJSON.get(NAME).asText();
-            String description = issueTypeJSON.get(DESCRIPTION).asText();
-            Integer id = issueTypeJSON.get(ID).asInt();
-            Boolean subtask = issueTypeJSON.get(SUBTASK).asBoolean();
-
-            if (subtask) {
+            if (issueTypeJSON.path(SUBTASK).asBoolean()) {
                 continue;
             }
 
-            String iconURL = issueTypeJSON.get("iconUrl").asText();
+            Map<String, Object> resEntry = new TreeMap<>();
 
-            resEntry.put(LABEL, name);
+            resEntry.put(LABEL, issueTypeJSON.path(NAME).asText(""));
+            resEntry.put(HINT, issueTypeJSON.path(DESCRIPTION).asText(""));
+            resEntry.put(VALUE, issueTypeJSON.path(ID).asInt());
 
-            if (description != null) {
-                resEntry.put(HINT, description);
-            }
-
-            resEntry.put(VALUE, id);
-            if (iconURL != null) {
-                resEntry.put(ICON, Collections.singletonMap(URL, iconURL));
+            JsonNode iconURL = issueTypeJSON.get("iconUrl");
+            if (iconURL != null && iconURL.isTextual()) {
+                resEntry.put(ICON, Collections.singletonMap(URL, iconURL.asText()));
             }
 
             res.add(resEntry);
@@ -253,8 +236,9 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
      */
     public String suggestAssignableUser(String instanceId, String project, String text)
     {
-        JsonNode jsonTree = asTree(getJiraIssueCreationRestClient(instanceId).getAssignableUsers(project, text));
-        return suggestUser(jsonTree);
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        JiraIssueCreationRestClient client = getJiraIssueCreationRestClient(jiraServer);
+        return suggestUser(asTree(client.getAssignableUsers(jiraServer, project, text)), client.getUserKey());
     }
 
     /**
@@ -264,52 +248,72 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
      */
     public String suggestUser(String instanceId, String text)
     {
-        JsonNode jsonTree = asTree(getJiraIssueCreationRestClient(instanceId).getUsers(text));
-        return suggestUser(jsonTree);
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        JiraIssueCreationRestClient client = getJiraIssueCreationRestClient(jiraServer);
+        return suggestUser(asTree(client.getUsers(jiraServer, text)), client.getUserKey());
     }
 
     /**
      * Suggest JIRA Users to pick from.
      * 
      * @param jsonTree the parsed JIRA Users JSON
+     * @param userKey the property identifying a JIRA user, used as value
      * @return The JSON selectize input for an Assignable Users suggest
      */
-    private String suggestUser(JsonNode jsonTree)
+    private String suggestUser(JsonNode jsonTree, String userKey)
     {
         List<Map<String, Object>> res = new ArrayList<>();
 
         for (JsonNode usersJSON : jsonTree) {
-            if (res.size() > 20) {
+            if (res.size() >= USER_SUGGESTIONS) {
                 break;
             }
 
+            String value = usersJSON.path(userKey).asText("");
+            if (value.isEmpty()) {
+                continue;
+            }
+
             Map<String, Object> resEntry = new TreeMap<>();
-
-            String name = usersJSON.get(NAME).asText();
-            String displayName = usersJSON.get("displayName").asText();
-            String emailAddress = usersJSON.get("emailAddress").asText();
-
-            String iconURL = null;
-            JsonNode avatarUrls = usersJSON.get(AVATAR_URLS);
-            if (avatarUrls != null) {
-                for (JsonNode iconJSON : avatarUrls) {
-                    iconURL = iconJSON.asText();
-                    break;
-                }
-            }
-
-            String formattedName = displayName + " - " + emailAddress + ' ' + '(' + name + ')';
-
-            resEntry.put(LABEL, formattedName);
-            resEntry.put(VALUE, name);
-            if (iconURL != null) {
-                resEntry.put(ICON, Collections.singletonMap(URL, iconURL));
-            }
+            resEntry.put(LABEL, getUserLabel(usersJSON));
+            resEntry.put(VALUE, value);
+            putIcon(resEntry, usersJSON);
 
             res.add(resEntry);
         }
 
         return asJSON(res);
+    }
+
+    /**
+     * @param user a JIRA user
+     * @return {@code displayName - email (name)} for a Data Center user, {@code displayName - email} for a Cloud
+     *     user, which has no name, and without the email when JIRA hides it
+     */
+    private String getUserLabel(JsonNode user)
+    {
+        StringBuilder label = new StringBuilder(user.path("displayName").asText(""));
+        String emailAddress = user.path("emailAddress").asText("");
+        if (!emailAddress.isEmpty()) {
+            label.append(" - ").append(emailAddress);
+        }
+        String name = user.path(NAME).asText("");
+        if (!name.isEmpty()) {
+            label.append(" (").append(name).append(')');
+        }
+
+        return label.toString();
+    }
+
+    private void putIcon(Map<String, Object> entry, JsonNode jiraObject)
+    {
+        JsonNode avatarUrls = jiraObject.get(AVATAR_URLS);
+        if (avatarUrls != null) {
+            for (JsonNode iconJSON : avatarUrls) {
+                entry.put(ICON, Collections.singletonMap(URL, iconJSON.asText()));
+                break;
+            }
+        }
     }
 
     /**
@@ -319,7 +323,8 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
      */
     public String getFieldsMetadata(String instanceId, String project, String issueType)
     {
-        return getJiraIssueCreationRestClient(instanceId).getFieldsMetadata(project, issueType);
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        return getJiraIssueCreationRestClient(jiraServer).getFieldsMetadata(jiraServer, project, issueType);
     }
 
     /**
@@ -353,7 +358,7 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
         JsonNode inputTree = asTree(inputJsonText);
 
         JsonNode fieldsTree = inputTree.get("fields");
-        if (fieldsTree == null) {
+        if (fieldsTree == null || !fieldsTree.isObject()) {
             throw new JiraIssueCreationException("Invalid Input Data.");
         }
 
@@ -387,76 +392,31 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
         String issueType = issueTypeIdTree.asText();
         String project = projectKeyTree.asText();
 
-        ObjectNode fields = (ObjectNode) fieldsTree;
-        if (isReporterNeeded(instanceId, project, issueType)) {
-            JsonNode reporterField = asTree(asJSON(Collections.singletonMap(NAME, getReporterUserName(instanceId))));
-            fields.set(REPORTER, reporterField);
-        }
+        JIRAServer jiraServer = getJIRAServer(instanceId);
+        JiraIssueCreationRestClient client = getJiraIssueCreationRestClient(jiraServer);
+        client.prepareFields(jiraServer, project, issueType, (ObjectNode) fieldsTree, getReporter(jiraServer));
 
-        return getJiraIssueCreationRestClient(instanceId).postIssue(asJSON(inputTree));
-    }
-
-    private boolean isReporterNeeded(String instanceId, String project, String issueType)
-    {
-        // Do not include a reporter field when we don't know the reporter username.
-        if (getReporterUserName(instanceId) == null) {
-            return false;
-        }
-
-        JsonNode fieldsMetadataTree = asTree(getFieldsMetadata(instanceId, project, issueType));
-        if (fieldsMetadataTree == null) {
-            throw new JiraIssueCreationException("Invalid fieldsMetadata JSON.");
-        }
-
-        JsonNode valuesTree = fieldsMetadataTree.get(VALUES);
-        if (valuesTree == null) {
-            throw new JiraIssueCreationException("Invalid fieldsMetadata JSON: could not find the 'values' attribute.");
-        }
-
-        if (!valuesTree.isArray()) {
-            throw new JiraIssueCreationException("Invalid fieldsMetadata JSON: 'values' attribute is not an array.");
-        }
-
-        JsonNode[] reporterFieldTree = {null};
-
-        // Look for the reporter field.
-        valuesTree.forEach((JsonNode field) -> {
-            JsonNode fieldIdTree = field.get("fieldId");
-            if (fieldIdTree == null || !fieldIdTree.isTextual()) {
-                return;
-            }
-
-            if (fieldIdTree.asText().equals(REPORTER)) {
-                reporterFieldTree[0] = field;
-            }
-        });
-
-        return reporterFieldTree[0] != null;
+        return client.postIssue(jiraServer, asJSON(inputTree));
     }
 
     /**
-     * Gets the reporter username.
-     * 
-     * @param instanceId the instance for which the username should be checked against
-     * @return the username or null if the reporter field shouldn't be set.
+     * The reporter is only set with basic auth: the requests are then sent as the JIRA user of the configuration, who
+     * would otherwise be the reporter of every issue.
+     *
+     * @return the current user, or {@code null} if the reporter field shouldn't be set
      */
-    private String getReporterUserName(String instanceId)
+    private JiraIssueReporter getReporter(JIRAServer jiraServer)
     {
-        JIRAServer jiraServer = jiraConfiguration.getJIRAServers().get(instanceId);
-        Optional<JIRAAuthenticator> authenticator = jiraServer.getJiraAuthenticator();
-        if (authenticator.isPresent() && authenticator.get() instanceof BasicAuthJIRAAuthenticator) {
-            String userName = xcontextProvider.get().getUserReference().getName();
-
-            String jiraResponse = getJiraIssueCreationRestClient(instanceId).getUser(userName);
-
-            JsonNode jiraUser = asTree(jiraResponse);
-
-            if (jiraUser.has(NAME)) {
-                return jiraUser.get(NAME).asText();
-            }
+        DocumentReference userReference = xcontextProvider.get().getUserReference();
+        if (userReference == null
+            || !(jiraServer.getJiraAuthenticator().orElse(null) instanceof BasicAuthJIRAAuthenticator))
+        {
+            return null;
         }
 
-        return null;
+        UserProperties userProperties = userPropertiesResolver.resolve(CurrentUserReference.INSTANCE);
+        InternetAddress email = userProperties != null ? userProperties.getEmail() : null;
+        return new JiraIssueReporter(userReference.getName(), email != null ? email.getAddress() : null);
     }
 
     private static String asJSON(Object object)
@@ -479,8 +439,34 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
         }
     }
 
-    private JiraIssueCreationRestClient getJiraIssueCreationRestClient(String instanceId)
+    private JIRAServer getJIRAServer(String instanceId)
     {
-        return new JiraIssueCreationRestClient(jiraConfiguration.getJIRAServers().get(instanceId));
+        JIRAServer jiraServer = jiraConfiguration.getJIRAServers().get(instanceId);
+        if (jiraServer == null) {
+            throw new JiraIssueCreationException(String.format("Unknown Jira instance [%s].", instanceId));
+        }
+
+        return jiraServer;
+    }
+
+    /**
+     * @param jiraServer the JIRA server to send the requests to
+     * @return the client handling the instance type of the server
+     */
+    private JiraIssueCreationRestClient getJiraIssueCreationRestClient(JIRAServer jiraServer)
+    {
+        String instanceType = jiraServer.getInstanceType();
+        ComponentManager componentManager = this.componentManagerProvider.get();
+        if (!componentManager.hasComponent(JiraIssueCreationRestClient.class, instanceType)) {
+            throw new JiraIssueCreationException(
+                String.format("Issue creation is not supported on the Jira instance type [%s].", instanceType));
+        }
+
+        try {
+            return componentManager.getInstance(JiraIssueCreationRestClient.class, instanceType);
+        } catch (ComponentLookupException e) {
+            throw new JiraIssueCreationException(
+                String.format("Failed to get the Jira client for the instance type [%s].", instanceType), e);
+        }
     }
 }
