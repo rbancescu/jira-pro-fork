@@ -34,6 +34,7 @@
   <properties>
     <xwiki.extension.name>JIRA Pro OAuth API</xwiki.extension.name>
     <xwiki.extension.category>other</xwiki.extension.category>
+    <xwiki.jacoco.instructionRatio>0.23</xwiki.jacoco.instructionRatio>
   </properties>
   <dependencies>
     <dependency>
@@ -90,6 +91,14 @@
       <groupId>com.xwiki.licensing</groupId>
       <artifactId>application-licensing-licensor-api</artifactId>
       <version>${licensing.version}</version>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.xwiki.commons</groupId>
+      <artifactId>xwiki-commons-tool-test-component</artifactId>
+      <version>${commons.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

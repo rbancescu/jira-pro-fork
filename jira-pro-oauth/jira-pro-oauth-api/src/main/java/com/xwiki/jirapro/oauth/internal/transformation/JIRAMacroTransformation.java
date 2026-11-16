@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.block.Block;
@@ -33,6 +34,7 @@ import org.xwiki.rendering.block.MacroBlock;
 import org.xwiki.rendering.transformation.MacroTransformationContext;
 
 import com.xpn.xwiki.XWikiContext;
+import com.xpn.xwiki.web.XWikiRequest;
 import com.xwiki.jirapro.oauth.internal.JIRAOAuthAuthenticator;
 import com.xwiki.licensing.Licensor;
 
@@ -45,6 +47,8 @@ import com.xwiki.licensing.Licensor;
  */
 public class JIRAMacroTransformation<P> implements org.xwiki.contrib.jira.macro.JIRAMacroTransformation<P>
 {
+    private static final String VIEW_ACTION = "view";
+
     @Inject
     private Provider<XWikiContext> contextProvider;
 
@@ -77,14 +81,33 @@ public class JIRAMacroTransformation<P> implements org.xwiki.contrib.jira.macro.
         if (authenticator.isAuthenticatingRequest()) {
             return blocks;
         }
+        String redirectURL = getRedirectURL(xcontext);
         if (authenticator.isRequiringAuthentication()) {
-            return List.of(authenticator.getWarningMacroBlock(true, context.isInline(),
-                xcontext.getURL().toString()));
+            return List.of(authenticator.getWarningMacroBlock(true, context.isInline(), redirectURL));
         } else {
             List<Block> result = new ArrayList<>(blocks);
-            result.add(authenticator.getWarningMacroBlock(false, context.isInline(),
-                xcontext.getURL().toString()));
+            result.add(authenticator.getWarningMacroBlock(false, context.isInline(), redirectURL));
             return result;
         }
+    }
+
+    /**
+     * The URL where the user comes back once authenticated on JIRA. It's the current URL when the page is viewed, so
+     * that the user gets back to the same view. Otherwise, e.g. when the content of the page is loaded with
+     * JavaScript ({@code xpage=get}, as done by the in-place editor after saving) or the macro is rendered by another
+     * action, the current URL doesn't display a page: the user goes back to the view of the current document instead.
+     *
+     * @param xcontext the XWiki context of the macro execution
+     * @return the URL to redirect to once the user is authenticated on JIRA
+     */
+    private String getRedirectURL(XWikiContext xcontext)
+    {
+        XWikiRequest request = xcontext.getRequest();
+        boolean isPageView = VIEW_ACTION.equals(xcontext.getAction())
+            && (request == null || StringUtils.isEmpty(request.getParameter("xpage")));
+        if (isPageView || xcontext.getDoc() == null) {
+            return xcontext.getURL().toString();
+        }
+        return xcontext.getDoc().getExternalURL(VIEW_ACTION, xcontext);
     }
 }
