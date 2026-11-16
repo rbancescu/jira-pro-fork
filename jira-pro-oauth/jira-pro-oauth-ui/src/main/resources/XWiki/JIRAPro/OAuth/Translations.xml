@@ -46,9 +46,11 @@ com.xwiki.jirapro.oauth.mightneedtoauthenticate.xwiki.description=The result sho
 com.xwiki.jirapro.oauth.mightneedtoauthenticate.xwiki.link=Click here to authenticate to XWiki and to see the full content
 com.xwiki.jirapro.oauth.oauth=OAuth
 com.xwiki.jirapro.oauth.requireAuthentication=Require authentication to see the content
-com.xwiki.jirapro.oauth.requireAuthentication_hint=When enabled it mean that the user won't be able to use this JIRA server until the user do the authentication process. Generally for private JIRA server it's recommended to be enabled.
+com.xwiki.jirapro.oauth.requireAuthentication_hint=When enabled, users must log in to JIRA to see the content of the JIRA instance. Recommended for private JIRA instances.
 com.xwiki.jirapro.oauth.clientId=Client ID
+com.xwiki.jirapro.oauth.clientId_hint=The client ID of the OAuth application used to access the JIRA instance.
 com.xwiki.jirapro.oauth.clientSecret=Secret
+com.xwiki.jirapro.oauth.clientSecret_hint=The client secret of the OAuth application used to access the JIRA instance.
 com.xwiki.jirapro.oauth.extension.name=JIRA OAuth</content>
   <object>
     <name>XWiki.JIRAPro.OAuth.Translations</name>

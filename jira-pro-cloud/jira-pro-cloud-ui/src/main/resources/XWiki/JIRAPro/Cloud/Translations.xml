@@ -38,7 +38,9 @@
   <hidden>true</hidden>
   <content>com.xwiki.jirapro.cloud.deploymentType=Cloud
 jira.config.auth.basicAuth.username.cloud=Email
-jira.config.auth.basicAuth.password.cloud=API token</content>
+jira.config.auth.basicAuth.username.hint.cloud=The email address of the Atlassian account used to access the JIRA instance.
+jira.config.auth.basicAuth.password.cloud=API token
+jira.config.auth.basicAuth.password.hint.cloud=An API token of the Atlassian account.</content>
   <object>
     <name>XWiki.JIRAPro.Cloud.Translations</name>
     <number>0</number>

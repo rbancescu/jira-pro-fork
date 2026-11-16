@@ -219,19 +219,24 @@
       &lt;dd&gt;&lt;/dd&gt;
       &lt;dt&gt;
         &lt;label for="jiraOAuthClientId"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientId', 'html/5.0')&lt;/label&gt;
+        &lt;span class="xHint" id="jiraOAuthClientIdHint"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientId_hint', 'html/5.0')&lt;/span&gt;
       &lt;/dt&gt;
       &lt;dd&gt;
-        &lt;input type="text" id="jiraOAuthClientId" name="clientId" value="$escapetool.xml($clientId)" autocomplete="off" /&gt;
+        &lt;input type="text" id="jiraOAuthClientId" name="clientId" value="$escapetool.xml($clientId)" autocomplete="off"
+          aria-describedby="jiraOAuthClientIdHint" /&gt;
       &lt;/dd&gt;
       &lt;dt&gt;
         &lt;label for="jiraOAuthClientSecret"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientSecret', 'html/5.0')&lt;/label&gt;
-        #if ($hasClientSecret)
-          &lt;span class="xHint" id="jiraOAuthClientSecretHint"&gt;$services.localization.render('jira.config.auth.keepSecret', 'html/5.0')&lt;/span&gt;
-        #end
+        &lt;span class="xHint" id="jiraOAuthClientSecretHint"&gt;##
+          $services.localization.render('com.xwiki.jirapro.oauth.clientSecret_hint', 'html/5.0')
+          #if ($hasClientSecret)
+            &lt;span id="jiraOAuthClientSecretKeep"&gt;$services.localization.render('jira.config.auth.keepSecret', 'html/5.0')&lt;/span&gt;##
+          #end
+        &lt;/span&gt;
       &lt;/dt&gt;
       &lt;dd&gt;
         &lt;input type="password" id="jiraOAuthClientSecret" name="clientSecret" value="" autocomplete="new-password"
-          #if ($hasClientSecret)aria-describedby="jiraOAuthClientSecretHint"#end /&gt;
+          aria-describedby="jiraOAuthClientSecretHint" /&gt;
       &lt;/dd&gt;
     &lt;/dl&gt;
     {{/html}}
