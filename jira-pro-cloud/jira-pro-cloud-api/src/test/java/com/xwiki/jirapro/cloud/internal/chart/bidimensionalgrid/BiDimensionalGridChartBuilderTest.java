@@ -22,7 +22,6 @@ package com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.Test;
 import org.xwiki.contrib.jira.charts.internal.bidimensionalgrid.source.JIRABiDimensionalGridChartJIRACell;
 import org.xwiki.contrib.jira.charts.internal.bidimensionalgrid.source.JIRABiDimensionalGridChartJIRADataSource;
@@ -31,6 +30,7 @@ import org.xwiki.contrib.jira.charts.internal.bidimensionalgrid.source.JIRABiDim
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
+import com.xwiki.jirapro.cloud.internal.chart.ChartParameters;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,10 +46,8 @@ class BiDimensionalGridChartBuilderTest
 
     private static CloudChartQuery query(String sortBy, String sortDirection, String numberToShow)
     {
-        return new CloudChartQuery(List.of(new BasicNameValuePair("filterId", "jql-project = TEST"),
-            new BasicNameValuePair("xstattype", "statuses"), new BasicNameValuePair("ystattype", "assignees"),
-            new BasicNameValuePair("sortDirection", sortDirection), new BasicNameValuePair("sortBy", sortBy),
-            new BasicNameValuePair("numberToShow", numberToShow)));
+        return new CloudChartQuery(ChartParameters.of("filterId", "jql-project = TEST", "xstattype", "statuses",
+            "ystattype", "assignees", "sortDirection", sortDirection, "sortBy", sortBy, "numberToShow", numberToShow));
     }
 
     private JIRABiDimensionalGridChartJIRADataSource build(CloudChartQuery query) throws Exception
@@ -118,8 +116,8 @@ class BiDimensionalGridChartBuilderTest
     @Test
     void escapeLabels() throws Exception
     {
-        CloudChartQuery query = new CloudChartQuery(List.of(new BasicNameValuePair("jql", ""),
-            new BasicNameValuePair("xstattype", "components"), new BasicNameValuePair("ystattype", "reporter")));
+        CloudChartQuery query = new CloudChartQuery(
+            ChartParameters.of("jql", "", "xstattype", "components", "ystattype", "reporter"));
         List<JsonNode> issues = List.of(new ObjectMapper().readTree(
             "{\"fields\":{\"components\":[{\"id\":\"1\",\"name\":\"<b>A</b>\"}],"
                 + "\"reporter\":{\"accountId\":\"x\",\"displayName\":\"Al & Bo\"}}}"));

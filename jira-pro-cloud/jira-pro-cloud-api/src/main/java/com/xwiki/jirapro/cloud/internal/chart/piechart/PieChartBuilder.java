@@ -48,7 +48,7 @@ import com.xwiki.jirapro.cloud.internal.chart.CloudStatisticValue;
  * @since 1.1.0
  */
 @Component
-@Named("PIE_CHART")
+@Named("PIE")
 @Singleton
 public class PieChartBuilder extends AbstractCloudChartBuilder
 {

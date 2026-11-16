@@ -36,7 +36,7 @@
   <minorEdit>false</minorEdit>
   <syntaxId>plain/1.0</syntaxId>
   <hidden>true</hidden>
-  <content>com.xwiki.jirapro.cloud.instanceType=Cloud
+  <content>com.xwiki.jirapro.cloud.deploymentType=Cloud
 jira.config.auth.basicAuth.username.cloud=Email
 jira.config.auth.basicAuth.password.cloud=API token</content>
   <object>

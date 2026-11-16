@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.StringUtils;
-import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.Text;
 import org.xwiki.component.annotation.Component;
@@ -124,22 +123,18 @@ public class CloudIssueXMLConverter
      * @param searchResults the pages of results returned by the search REST resource, requested with the
      *     {@code renderedFields} and {@code names} expansions
      * @param siteURL the URL of the JIRA Cloud site, used to build the links to the issues
-     * @return the XML document containing the issues
+     * @return the issues, one {@code <item>} element per issue, in the order of the search results
      */
-    public Document convert(List<JsonNode> searchResults, String siteURL)
+    public List<Element> convert(List<JsonNode> searchResults, String siteURL)
     {
-        Element channel = new Element("channel");
+        List<Element> items = new ArrayList<>();
         for (JsonNode searchResult : searchResults) {
             for (JsonNode issue : searchResult.path("issues")) {
-                channel.addContent(convertIssue(issue, searchResult.path("names"), siteURL));
+                items.add(convertIssue(issue, searchResult.path("names"), siteURL));
             }
         }
 
-        Element rss = new Element("rss");
-        rss.setAttribute(VERSION, "0.92");
-        rss.addContent(channel);
-
-        return new Document(rss);
+        return items;
     }
 
     private Element convertIssue(JsonNode issue, JsonNode names, String siteURL)

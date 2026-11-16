@@ -21,7 +21,6 @@ package com.xwiki.jirapro.cloud.internal.chart;
 
 import java.util.List;
 
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.Test;
 import org.xwiki.contrib.jira.charts.internal.bidimensionalgrid.source.JIRABiDimensionalGridChartJIRADataSource;
 import org.xwiki.contrib.jira.charts.internal.createdvsresolved.source.JIRACreatedVsResolvedDataSource;
@@ -32,6 +31,7 @@ import org.xwiki.test.junit5.mockito.ComponentTest;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
 import org.xwiki.test.junit5.mockito.MockComponent;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -72,6 +72,11 @@ class AbstractCloudChartBuilderTest
 
     private final JIRAServer server = new JIRAServer(SITE_URL + "/", "id", null, "cloud");
 
+    private static <T> T parse(String json, Class<T> type) throws Exception
+    {
+        return new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).readValue(json, type);
+    }
+
     private static JsonNode searchResult(int issueCount)
     {
         ObjectNode searchResult = new ObjectMapper().createObjectNode();
@@ -88,8 +93,8 @@ class AbstractCloudChartBuilderTest
         when(this.restClient.searchIssues(this.server, "project = TEST", List.of("status"), null, 5001))
             .thenReturn(List.of(searchResult(2), searchResult(1)));
 
-        JIRAPieChartDataSource data = this.pieChartBuilder.fetch(this.server,
-            List.of(new BasicNameValuePair("jql", "project = TEST"), new BasicNameValuePair("statType", "statuses")),
+        JIRAPieChartDataSource data = parse(this.pieChartBuilder.fetch(this.server,
+            ChartParameters.of("jql", "project = TEST", "statType", "statuses")),
             JIRAPieChartDataSource.class);
 
         // The issues of all the pages are counted.
@@ -107,8 +112,8 @@ class AbstractCloudChartBuilderTest
         when(this.restClient.getFilter(this.server, "10000"))
             .thenReturn(new ObjectMapper().readTree("{\"name\":\"My filter\"}"));
 
-        JIRAPieChartDataSource data = this.pieChartBuilder.fetch(this.server,
-            List.of(new BasicNameValuePair("filterId", "10000"), new BasicNameValuePair("statType", "statuses")),
+        JIRAPieChartDataSource data = parse(this.pieChartBuilder.fetch(this.server,
+            ChartParameters.of("filterId", "10000", "statType", "statuses")),
             JIRAPieChartDataSource.class);
 
         assertEquals("My filter", data.getFilterTitle());
@@ -123,9 +128,8 @@ class AbstractCloudChartBuilderTest
             .thenReturn(List.of(searchResult(0)));
         when(this.restClient.getFilter(this.server, "10000")).thenReturn(new ObjectMapper().readTree("{}"));
 
-        JIRACreatedVsResolvedDataSource data = this.createdVsResolvedChartBuilder.fetch(this.server,
-            List.of(new BasicNameValuePair("jql", "filter=10000"), new BasicNameValuePair("period", "daily"),
-                new BasicNameValuePair("daysprevious", "7")),
+        JIRACreatedVsResolvedDataSource data = parse(this.createdVsResolvedChartBuilder.fetch(this.server,
+            ChartParameters.of("jql", "filter=10000", "period", "daily", "daysprevious", "7")),
             JIRACreatedVsResolvedDataSource.class);
 
         assertEquals(8, data.getResults().size());
@@ -140,9 +144,8 @@ class AbstractCloudChartBuilderTest
             .thenReturn(List.of(searchResult(1)));
 
         JIRABiDimensionalGridChartJIRADataSource data =
-            this.biDimensionalGridChartBuilder.fetch(this.server,
-                List.of(new BasicNameValuePair("filterId", "jql-project = TEST"),
-                    new BasicNameValuePair("xstattype", "statuses"), new BasicNameValuePair("ystattype", "assignees")),
+            parse(this.biDimensionalGridChartBuilder.fetch(this.server,
+                ChartParameters.of("filterId", "jql-project = TEST", "xstattype", "statuses", "ystattype", "assignees")),
                 JIRABiDimensionalGridChartJIRADataSource.class);
 
         assertEquals(1, data.getTotalRows());
@@ -155,8 +158,8 @@ class AbstractCloudChartBuilderTest
             .thenReturn(List.of(searchResult(5000), searchResult(1)));
 
         JIRABadRequestException exception = assertThrows(JIRABadRequestException.class,
-            () -> this.pieChartBuilder.fetch(this.server,
-                List.of(new BasicNameValuePair("jql", ""), new BasicNameValuePair("statType", "statuses")),
+            () -> parse(this.pieChartBuilder.fetch(this.server,
+                ChartParameters.of("jql", "", "statType", "statuses")),
                 JIRAPieChartDataSource.class));
 
         assertEquals("The chart can't be displayed because its query matches more than 5000 issues, the maximum for "

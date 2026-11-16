@@ -20,21 +20,21 @@
 package com.xwiki.jirapro.cloud.internal;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.apache.hc.core5.http.NameValuePair;
-import org.jdom2.Document;
+import org.jdom2.Element;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 import org.xwiki.contrib.jira.macro.JIRAConnector;
-import org.xwiki.contrib.jira.macro.JIRAGadgetType;
+import org.xwiki.contrib.jira.macro.JIRAChartType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
@@ -50,6 +50,9 @@ import com.xwiki.jirapro.cloud.internal.chart.CloudChartBuilder;
 @Singleton
 public class CloudJIRAConnector implements JIRAConnector
 {
+    /**
+     * The deployment type of the JIRA Cloud instances, which is the hint of this connector.
+     */
     public static final String HINT = "cloud";
 
     private static final int DEFAULT_LIMIT = 1000;
@@ -65,7 +68,7 @@ public class CloudJIRAConnector implements JIRAConnector
     private Provider<ComponentManager> componentManagerProvider;
 
     @Override
-    public Document searchIssues(JIRAServer server, String jql, int maxCount) throws JIRAConnectionException
+    public List<Element> searchIssues(JIRAServer server, String jql, int maxCount) throws JIRAConnectionException
     {
         int limit = maxCount > -1 ? maxCount : DEFAULT_LIMIT;
 
@@ -76,14 +79,14 @@ public class CloudJIRAConnector implements JIRAConnector
     }
 
     @Override
-    public Integer countIssues(JIRAServer server, String jql) throws JIRAConnectionException
+    public long countIssues(JIRAServer server, String jql) throws JIRAConnectionException
     {
         return this.restClient.countIssues(server, jql);
     }
 
     @Override
-    public <T> T fetchGadgetData(JIRAServer server, JIRAGadgetType type, List<NameValuePair> parameters,
-        Class<T> expectedType) throws JIRAConnectionException
+    public String getChartData(JIRAServer server, JIRAChartType type, Map<String, List<String>> parameters)
+        throws JIRAConnectionException
     {
         CloudChartBuilder builder;
         try {
@@ -93,6 +96,6 @@ public class CloudJIRAConnector implements JIRAConnector
                 String.format("The chart [%s] is not supported for JIRA Cloud instances.", type), e);
         }
 
-        return builder.fetch(server, parameters, expectedType);
+        return builder.fetch(server, parameters);
     }
 }

@@ -53,7 +53,7 @@ import com.xwiki.jirapro.cloud.internal.chart.CloudStatisticValue;
  * @since 1.1.0
  */
 @Component
-@Named("BIDIMENSIONAL_CHARTS")
+@Named("TWO_DIMENSIONAL_GRID")
 @Singleton
 public class BiDimensionalGridChartBuilder extends AbstractCloudChartBuilder
 {

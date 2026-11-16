@@ -34,9 +34,9 @@
   <properties>
     <xwiki.extension.name>JIRA Pro Cloud</xwiki.extension.name>
     <xwiki.extension.category>other</xwiki.extension.category>
-    <!-- The Cloud instance type must stay selectable and its labels displayed even without a valid license. -->
+    <!-- The Cloud deployment type must stay selectable and its labels displayed even without a valid license. -->
     <xwiki.extension.licensing.publicDocuments>
-      XWiki.JIRAPro.Cloud.CloudInstanceTypeUIX,
+      XWiki.JIRAPro.Cloud.CloudDeploymentTypeUIX,
       XWiki.JIRAPro.Cloud.Translations
     </xwiki.extension.licensing.publicDocuments>
   </properties>

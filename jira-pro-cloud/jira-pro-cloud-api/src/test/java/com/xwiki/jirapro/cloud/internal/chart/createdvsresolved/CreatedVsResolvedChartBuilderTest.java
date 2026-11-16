@@ -22,13 +22,11 @@ package com.xwiki.jirapro.cloud.internal.chart.createdvsresolved;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.hc.core5.http.NameValuePair;
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,6 +36,7 @@ import org.xwiki.contrib.jira.charts.internal.createdvsresolved.source.JIRACreat
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xwiki.jirapro.cloud.internal.chart.ChartParameters;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
@@ -62,16 +61,13 @@ class CreatedVsResolvedChartBuilderTest
 
     private static CloudChartQuery query(String period, String operation, int days, boolean trend)
     {
-        List<NameValuePair> parameters = new ArrayList<>();
-        parameters.add(new BasicNameValuePair("jql", "project = TEST"));
-        parameters.add(new BasicNameValuePair("field", "created"));
-        parameters.add(new BasicNameValuePair("field", "resolved"));
+        Map<String, List<String>> parameters = ChartParameters.of("jql", "project = TEST", "field", "created",
+            "field", "resolved");
         if (trend) {
-            parameters.add(new BasicNameValuePair("field", "unresolvedTrend"));
+            parameters.get("field").add("unresolvedTrend");
         }
-        parameters.add(new BasicNameValuePair("period", period));
-        parameters.add(new BasicNameValuePair("operation", operation));
-        parameters.add(new BasicNameValuePair("daysprevious", String.valueOf(days)));
+        parameters.putAll(ChartParameters.of("period", period, "operation", operation, "daysprevious",
+            String.valueOf(days)));
         return new CloudChartQuery(parameters);
     }
 

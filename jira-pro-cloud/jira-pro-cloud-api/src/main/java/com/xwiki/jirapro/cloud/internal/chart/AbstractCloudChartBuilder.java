@@ -21,15 +21,15 @@ package com.xwiki.jirapro.cloud.internal.chart;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.apache.hc.core5.http.NameValuePair;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -49,8 +49,7 @@ public abstract class AbstractCloudChartBuilder implements CloudChartBuilder
      */
     static final int MAX_ISSUES = 5000;
 
-    private static final ObjectMapper OBJECT_MAPPER =
-        new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final String FILTER_TITLE = "filterTitle";
 
@@ -60,8 +59,7 @@ public abstract class AbstractCloudChartBuilder implements CloudChartBuilder
     private CloudJIRARestClient restClient;
 
     @Override
-    public <T> T fetch(JIRAServer server, List<NameValuePair> parameters, Class<T> expectedType)
-        throws JIRAConnectionException
+    public String fetch(JIRAServer server, Map<String, List<String>> parameters) throws JIRAConnectionException
     {
         CloudChartQuery query = new CloudChartQuery(parameters);
         String siteURL = server.getURL();
@@ -77,7 +75,11 @@ public abstract class AbstractCloudChartBuilder implements CloudChartBuilder
             data.put(FILTER_URL, CloudChartQuery.getSearchURL(siteURL, query.getJQL()));
         }
 
-        return OBJECT_MAPPER.convertValue(data, expectedType);
+        try {
+            return OBJECT_MAPPER.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            throw new JIRAConnectionException("Failed to serialize the data of the chart.", e);
+        }
     }
 
     /**

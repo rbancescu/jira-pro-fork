@@ -22,12 +22,11 @@ package com.xwiki.jirapro.cloud.internal.chart;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.core5.http.NameValuePair;
 
 /**
  * The issues a chart is computed on, and the other parameters of the chart, read from the query parameters of the
@@ -56,16 +55,16 @@ public class CloudChartQuery
 
     private static final Pattern NUMBER = Pattern.compile("\\d+");
 
-    private final List<NameValuePair> parameters;
+    private final Map<String, List<String>> parameters;
 
     private final String jql;
 
     private final String filterId;
 
     /**
-     * @param parameters the query parameters of the gadget REST resource
+     * @param parameters the query parameters of the gadget REST resource, a parameter possibly having several values
      */
-    public CloudChartQuery(List<NameValuePair> parameters)
+    public CloudChartQuery(Map<String, List<String>> parameters)
     {
         this.parameters = parameters;
 
@@ -98,8 +97,8 @@ public class CloudChartQuery
     public String getParameter(String name)
     {
         // The value is null when the macro has no value for it (e.g. the jql of a chart without query nor filter).
-        return this.parameters.stream().filter(parameter -> name.equals(parameter.getName())).findFirst()
-            .map(NameValuePair::getValue).orElse(null);
+        List<String> values = getParameters(name);
+        return values.isEmpty() ? null : values.get(0);
     }
 
     /**
@@ -108,8 +107,7 @@ public class CloudChartQuery
      */
     public List<String> getParameters(String name)
     {
-        return this.parameters.stream().filter(parameter -> name.equals(parameter.getName()))
-            .map(NameValuePair::getValue).collect(Collectors.toList());
+        return this.parameters.getOrDefault(name, List.of());
     }
 
     /**

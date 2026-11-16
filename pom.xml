@@ -143,4 +143,18 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <profiles>
+    <profile>
+      <!-- Since Java 21 the JVM warns when an agent is loaded dynamically, as Mockito does to mock classes. The
+        warning is written to the console, which makes the tests fail. JaCoCo prepends its own agent to this
+        property, and Surefire passes it to the test JVM. -->
+      <id>dynamic-agent-loading</id>
+      <activation>
+        <jdk>[21,)</jdk>
+      </activation>
+      <properties>
+        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+      </properties>
+    </profile>
+  </profiles>
 </project>

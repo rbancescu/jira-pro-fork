@@ -20,8 +20,8 @@
 package com.xwiki.jirapro.cloud.internal.chart;
 
 import java.util.List;
+import java.util.Map;
 
-import org.apache.hc.core5.http.NameValuePair;
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.macro.JIRABadRequestException;
@@ -29,7 +29,7 @@ import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 
 /**
  * Computes the data of a chart for a JIRA Cloud instance, which has no gadget REST resources. There is one
- * implementation per chart, whose hint is the name of the {@link org.xwiki.contrib.jira.macro.JIRAGadgetType} of the
+ * implementation per chart, whose hint is the name of the {@link org.xwiki.contrib.jira.macro.JIRAChartType} of the
  * chart, like there is one data fetcher per chart in the JIRA macro.
  *
  * @version $Id$
@@ -40,13 +40,11 @@ public interface CloudChartBuilder
 {
     /**
      * @param server the JIRA server
-     * @param parameters the query parameters of the JIRA Data Center gadget REST resource of the chart
-     * @param expectedType the type in which to convert the JSON data
-     * @param <T> the type in which to convert the JSON data
+     * @param parameters the query parameters of the JIRA Data Center gadget REST resource of the chart, in the order
+     *     the chart macros build them, a parameter possibly having several values
      * @return the data of the chart, in the JSON format of the gadget REST resource
      * @throws JIRAConnectionException if a request fails, or a {@link JIRABadRequestException} if the chart can't be
      *     computed with these parameters
      */
-    <T> T fetch(JIRAServer server, List<NameValuePair> parameters, Class<T> expectedType)
-        throws JIRAConnectionException;
+    String fetch(JIRAServer server, Map<String, List<String>> parameters) throws JIRAConnectionException;
 }

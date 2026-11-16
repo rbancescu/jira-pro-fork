@@ -41,158 +41,197 @@
   {{missingLicenseMessage extensionName="com.xwiki.jirapro.oauth.extension.name"/}}
   #stop
 #end
+## Displays and saves the OAuth settings of the JIRA instances, for the JIRA administration section (see the
+## org.xwiki.contrib.jira.authconfig UIX extension point). The settings of each instance are stored in
+## XWiki.JIRAPro.OAuth.Config, as a XWiki.JIRAPro.OAuth.ConfigClass object and an OpenID Connect client configuration
+## named "jiraserver-oauth-&lt;instance ID&gt;".
+## * GET, without "action": the settings of the instance with the given "id" (empty for a new instance). Nothing is
+##   saved.
+## * POST action=saveInstance: saves the "requireAuthentication", "clientId" and "clientSecret" of the instance "id",
+##   renamed from "previousId" when it's not empty, using its "url" and "deploymentType". An empty "previousId" means a
+##   new instance, which doesn't reuse settings left for the same ID. When the settings fields aren't sent (no
+##   "clientId"), the current settings are kept; an empty secret keeps the current one.
+## * POST action=deleteInstance: removes the settings of the instance "id".
 #set ($jiraOAuthClass = 'XWiki.JIRAPro.OAuth.ConfigClass')
 #set ($oidcConfClass = 'XWiki.OIDC.ClientConfigurationClass')
 #set ($confDoc = $xwiki.getDocument('XWiki.JIRAPro.OAuth.Config'))
-#set ($discard = $confDoc.setHidden(true))
-#set ($confObjects = $confDoc.getObjects($jiraOAuthClass))
-#set ($oidcConfObjects = $confDoc.getObjects('XWiki.OIDC.ClientConfigurationClass'))
-#if ($xcontext.action == 'get')
-  #if ($request.getParameter('save') == 'true')
-    ## Save the changes
-    #if ($services.csrf.isTokenValid($!request.form_token))
-      #set ($mainClassIdMatcher = $regextool.compile('JIRA.JIRAConfigClass_(\d+)_id'))
-      #set ($usedOIDCConfigName = [])
-      #foreach ($obj in $confObjects)
-        ## Update JIRA OAuth object
-        #set ($formIdFieldName = "${jiraOAuthClass}_${obj.number}_id")
-        #set ($formRequireAuthFieldName = "${jiraOAuthClass}_${obj.number}_requireAuthentication")
-        #set ($formIdValue = $request.getParameter($formIdFieldName))
-        #set ($oidcConfigId = "jiraserver-oauth-$formIdValue")
-        #set ($formRequireAuthValue = $request.getParameter($formRequireAuthFieldName))
-        #if ($formIdValue != $NULL &amp;&amp; $formRequireAuthValue != $NULL)
-          #set ($previousId = $obj.getValue('id'))
-          #set ($discard = $usedOIDCConfigName.add($oidcConfigId))
-          ## Update JIRA OAuth object
-          #set ($discard = $obj.set('id', $formIdValue))
-          #set ($discard = $obj.set('requireAuthentication', $formRequireAuthValue))
-          #set ($discard = $obj.set('oidcConfigName', $oidcConfigId))
-          ## Update OIDC object
-          #set ($oidcObject = $NULL)
-          #foreach ($oidcObj in $oidcConfObjects)
-            #if ($oidcObj.getValue('configurationName') == "jiraserver-oauth-$previousId")
-              #set ($oidcObject = $oidcObj)
-            #end
-          #end
-          #if ($oidcObject == $NULL)
-            #set ($oidcObject = $confDoc.newObject($oidcConfClass))
-          #end
-          #set ($formClientIdFieldName = "${oidcConfClass}_${oidcObject.number}_clientId")
-          #set ($formClientSecretFieldName = "${oidcConfClass}_${oidcObject.number}_clientSecret")
-          #set ($formClientIdValue = $request.getParameter($formClientIdFieldName))
-          #set ($formClientSecretValue = $request.getParameter($formClientSecretFieldName))
-          ##
-          ## We need to get the JIRA Sever URL and instance type from the main config object from the form request
-          ##
-          #set ($instanceType = '')
-          #foreach ($param in $request.parameterMap.entrySet())
-            #set ($entryMatcher = $mainClassIdMatcher.matcher($param.key))
-            #if ($entryMatcher.find() &amp;&amp; $param.value[0] == $formIdValue)
-              #set ($baseUrl = $request.getParameter("JIRA.JIRAConfigClass_${entryMatcher.group(1)}_url"))
-              #set ($instanceTypeFieldName = "JIRA.JIRAConfigClass_${entryMatcher.group(1)}_instanceType")
-              #set ($instanceType = "$!request.getParameter($instanceTypeFieldName)")
-            #end
-          #end
-          #if ($instanceType == 'cloud')
-            ## JIRA Cloud relies on the Atlassian authorization server (OAuth 2.0 3LO), which is the same for all sites.
-            #set ($authorizationEndpoint = 'https://auth.atlassian.com/authorize?audience=api.atlassian.com&amp;prompt=consent')
-            #set ($tokenEndpoint = 'https://auth.atlassian.com/oauth/token')
-            ## The scopes are separated by commas since the OIDC configuration doesn't split them on spaces.
-            #set ($oauthScope = 'read:jira-work,write:jira-work,read:jira-user,offline_access')
-          #else
-            #set ($authorizationEndpoint = "${baseUrl}/rest/oauth2/latest/authorize")
-            #set ($tokenEndpoint = "${baseUrl}/rest/oauth2/latest/token")
-            #set ($oauthScope = 'WRITE')
-          #end
-          #set ($discard = $oidcObject.set('configurationName', $oidcConfigId))
-          #set ($discard = $oidcObject.set('clientId', $formClientIdValue))
-          #set ($discard = $oidcObject.set('clientSecret', $formClientSecretValue))
-          #set ($discard = $oidcObject.set('authorizationEndpoint', $authorizationEndpoint))
-          #set ($discard = $oidcObject.set('tokenEndpoint', $tokenEndpoint))
-          #set ($discard = $oidcObject.set('tokenEndpointMethod', 'client_secret_post'))
-          #set ($discard = $oidcObject.set('tokenStorageScope', 'USER'))
-          #set ($discard = $oidcObject.set('scope', $oauthScope))
-          #set ($discard = $oidcObject.set('userInfoSkip', 1))
-          #set ($discard = $oidcObject.set('enableUser', 0))
-          #set ($discard = $oidcObject.set('responseType', 'code'))
-          #set ($discard = $oidcObject.set('skipLogoutIdToken', 0))
-        #else
-          ## Seem that the object is not any more in the form, so drop it
-          #set ($discard = $confDoc.removeObject($obj))
-        #end
-      #end
-      ## Clean OIDC config objects which are not used any more
-      #foreach ($oidcObj in $oidcConfObjects)
-        #if (!$usedOIDCConfigName.contains($oidcObj.getValue('configurationName')))
-          #set ($discard = $confDoc.removeObject($oidcObj))
-        #end
-      #end
-      #set ($discard = $confDoc.save())
+## Sets $jiraOAuthObjects and $oidcObjects: the settings objects of the given instance ID.
+#macro (jiraOAuthGetObjects $jiraOAuthId)
+  #set ($jiraOAuthObjects = [])
+  #foreach ($candidate in $confDoc.getObjects($jiraOAuthClass))
+    #if ("$!candidate" != '' &amp;&amp; "$!candidate.getValue('id')" == $jiraOAuthId)
+      #set ($discard = $jiraOAuthObjects.add($candidate))
+    #end
+  #end
+  #set ($oidcObjects = [])
+  #foreach ($candidate in $confDoc.getObjects($oidcConfClass))
+    #if ("$!candidate" != '' &amp;&amp; "$!candidate.getValue('configurationName')" == "jiraserver-oauth-$jiraOAuthId")
+      #set ($discard = $oidcObjects.add($candidate))
+    #end
+  #end
+#end
+#macro (jiraOAuthError $status $message)
+  #set ($discard = $response.setStatus($status))
+  #jsonResponse({'error': $message})
+#end
+#macro (jiraOAuthSaveInstance)
+  #set ($instanceId = $stringtool.trimToEmpty($request.id))
+  #set ($previousId = "$!request.previousId")
+  #set ($baseURL = $stringtool.trimToEmpty($request.url))
+  #if ($instanceId == '')
+    #jiraOAuthError(400, $services.localization.render('jira.config.error.idRequired'))
+  #else
+    #if ($previousId == '')
+      ## A new instance: the settings left for the same ID (e.g. by an instance whose settings couldn't be deleted)
+      ## aren't reused, they're replaced.
+      #set ($jiraOAuthObjects = [])
+      #set ($oidcObjects = [])
     #else
-      #set($discard = $response.setStatus(403))
-      #jsonResponse({"error": "Invalid CSRF token"})
+      ## Keep the settings of the instance when its ID is changed.
+      #jiraOAuthGetObjects($previousId)
+      #if ($jiraOAuthObjects.isEmpty())
+        #jiraOAuthGetObjects($instanceId)
+      #end
+    #end
+    #if ($jiraOAuthObjects.isEmpty())
+      #set ($jiraOAuthObject = $confDoc.newObject($jiraOAuthClass))
+    #else
+      #set ($jiraOAuthObject = $jiraOAuthObjects.get(0))
+    #end
+    #if ($oidcObjects.isEmpty())
+      #set ($oidcObject = $confDoc.newObject($oidcConfClass))
+    #else
+      #set ($oidcObject = $oidcObjects.get(0))
+    #end
+    ## Only one settings object of each kind per instance ID.
+    #set ($jiraOAuthObjectNumber = $jiraOAuthObject.number)
+    #set ($oidcObjectNumber = $oidcObject.number)
+    #jiraOAuthGetObjects($instanceId)
+    #foreach ($duplicate in $jiraOAuthObjects)
+      #if ($duplicate.number != $jiraOAuthObjectNumber)
+        #set ($discard = $confDoc.removeObject($duplicate))
+      #end
+    #end
+    #foreach ($duplicate in $oidcObjects)
+      #if ($duplicate.number != $oidcObjectNumber)
+        #set ($discard = $confDoc.removeObject($duplicate))
+      #end
+    #end
+    #set ($oidcConfigId = "jiraserver-oauth-$instanceId")
+    ## The settings fields are sent together (the checkbox isn't sent when it's not checked).
+    #set ($settingsSent = $request.getParameter('clientId') != $NULL)
+    #set ($discard = $jiraOAuthObject.set('id', $instanceId))
+    #if ($settingsSent)
+      #set ($requireAuthentication = 0)
+      #if ("$!request.requireAuthentication" == '1')
+        #set ($requireAuthentication = 1)
+      #end
+      #set ($discard = $jiraOAuthObject.set('requireAuthentication', $requireAuthentication))
+    #end
+    #set ($discard = $jiraOAuthObject.set('oidcConfigName', $oidcConfigId))
+    #if ("$!request.deploymentType" == 'cloud')
+      ## JIRA Cloud relies on the Atlassian authorization server (OAuth 2.0 3LO), which is the same for all sites.
+      #set ($authorizationEndpoint = 'https://auth.atlassian.com/authorize?audience=api.atlassian.com&amp;prompt=consent')
+      #set ($tokenEndpoint = 'https://auth.atlassian.com/oauth/token')
+      ## The scopes are separated by commas since the OIDC configuration doesn't split them on spaces.
+      #set ($oauthScope = 'read:jira-work,write:jira-work,read:jira-user,offline_access')
+    #else
+      #set ($authorizationEndpoint = "${baseURL}/rest/oauth2/latest/authorize")
+      #set ($tokenEndpoint = "${baseURL}/rest/oauth2/latest/token")
+      #set ($oauthScope = 'WRITE')
+    #end
+    #set ($discard = $oidcObject.set('configurationName', $oidcConfigId))
+    #if ($settingsSent)
+      #set ($discard = $oidcObject.set('clientId', $stringtool.trimToEmpty($request.clientId)))
+    #end
+    #if ("$!request.clientSecret" != '')
+      #set ($discard = $oidcObject.set('clientSecret', $request.clientSecret))
+    #end
+    #set ($discard = $oidcObject.set('authorizationEndpoint', $authorizationEndpoint))
+    #set ($discard = $oidcObject.set('tokenEndpoint', $tokenEndpoint))
+    #set ($discard = $oidcObject.set('tokenEndpointMethod', 'client_secret_post'))
+    #set ($discard = $oidcObject.set('tokenStorageScope', 'USER'))
+    #set ($discard = $oidcObject.set('scope', $oauthScope))
+    #set ($discard = $oidcObject.set('userInfoSkip', 1))
+    #set ($discard = $oidcObject.set('enableUser', 0))
+    #set ($discard = $oidcObject.set('responseType', 'code'))
+    #set ($discard = $oidcObject.set('skipLogoutIdToken', 0))
+    #set ($discard = $confDoc.setHidden(true))
+    #set ($discard = $confDoc.save("Saved the OAuth settings of the JIRA instance [$instanceId]", true))
+    #jsonResponse({'id': $instanceId})
+  #end
+#end
+#macro (jiraOAuthDeleteInstance)
+  #set ($instanceId = $stringtool.trimToEmpty($request.id))
+  #if ($instanceId != '')
+    #jiraOAuthGetObjects($instanceId)
+    #if (!$jiraOAuthObjects.isEmpty() || !$oidcObjects.isEmpty())
+      #foreach ($object in $jiraOAuthObjects)
+        #set ($discard = $confDoc.removeObject($object))
+      #end
+      #foreach ($object in $oidcObjects)
+        #set ($discard = $confDoc.removeObject($object))
+      #end
+      #set ($discard = $confDoc.save("Removed the OAuth settings of the JIRA instance [$instanceId]", true))
+    #end
+  #end
+  #jsonResponse({'id': $instanceId})
+#end
+#if ($xcontext.action == 'get')
+  #if (!$xwiki.hasAdminRights())
+    #jiraOAuthError(403, $services.localization.render('jira.config.error.notAllowed'))
+  #elseif ("$!request.action" != '')
+    #if ($request.method != 'POST' || !$services.csrf.isTokenValid($request.form_token))
+      #jiraOAuthError(403, $services.localization.render('jira.config.error.invalidRequest'))
+    #elseif ($request.action == 'saveInstance')
+      #jiraOAuthSaveInstance
+    #elseif ($request.action == 'deleteInstance')
+      #jiraOAuthDeleteInstance
+    #else
+      #jiraOAuthError(400, $services.localization.render('jira.config.error.invalidRequest'))
     #end
   #else
-    ## Show the content
-    #set ($configId = $request.id)
-    #set ($oidcConfigId = "jiraserver-oauth-$configId")
-    #set ($confObj = $NULL)
-    #set ($oidcConfObject = $NULL)
-    #foreach ($o in $confObjects)
-      #if ($o.getValue('id') == $configId)
-        #set ($confObj = $o)
+    ## Show the settings of the instance.
+    #set ($requireAuthentication = false)
+    #set ($clientId = '')
+    #set ($hasClientSecret = false)
+    #set ($instanceId = "$!request.id")
+    #if ($instanceId != '')
+      #jiraOAuthGetObjects($instanceId)
+      #if (!$jiraOAuthObjects.isEmpty())
+        #set ($requireAuthentication = "$!jiraOAuthObjects.get(0).getValue('requireAuthentication')" == '1')
+      #end
+      #if (!$oidcObjects.isEmpty())
+        #set ($clientId = "$!oidcObjects.get(0).getValue('clientId')")
+        #set ($hasClientSecret = "$!oidcObjects.get(0).getValue('clientSecret')" != '')
       #end
     #end
-    #foreach ($o in $oidcConfObjects)
-      #if ($o.getValue('configurationName') == $oidcConfigId)
-        #set ($oidcConfObject = $o)
-      #end
-    #end
-    #if ($confObj == $NULL)
-      #set ($confObj = $confDoc.newObject($jiraOAuthClass))
-      #set ($discard = $confObj.set('id', $configId))
-      #set ($discard = $confObj.set('oidcConfigName', $oidcConfigId))
-      #set ($discard = $confDoc.save())
-    #end
-    #if ($oidcConfObject == $NULL)
-      #set ($oidcConfObject = $confDoc.newObject($oidcConfClass))
-      #set ($discard = $oidcConfObject.set('configurationName', $oidcConfigId))
-      #set ($discard = $confDoc.save())
-    #end
-    $confObj.display('id', 'hidden')
-
     {{html clean="false"}}
     &lt;dl class="jira-oauth-authenticator-config"&gt;
-      &lt;dd&gt;
-        &lt;label for="${jiraOAuthClass}_${confObj.number}_requireAuthentication"&gt;
-          {{/html}}
-
-          $confObj.display('requireAuthentication', 'edit')
-
-          {{html clean="false"}}
+      &lt;dt&gt;
+        &lt;label for="jiraOAuthRequireAuthentication"&gt;
+          &lt;input type="checkbox" id="jiraOAuthRequireAuthentication" name="requireAuthentication" value="1"
+            #if ($requireAuthentication)checked="checked"#end aria-describedby="jiraOAuthRequireAuthenticationHint" /&gt;
           $services.localization.render('com.xwiki.jirapro.oauth.requireAuthentication', 'html/5.0')
-          &lt;span class="xHint"&gt;$services.localization.render('com.xwiki.jirapro.oauth.requireAuthentication_hint', 'html/5.0')&lt;/span&gt;
         &lt;/label&gt;
-      &lt;/dd&gt;
+        &lt;span class="xHint" id="jiraOAuthRequireAuthenticationHint"&gt;$services.localization.render('com.xwiki.jirapro.oauth.requireAuthentication_hint', 'html/5.0')&lt;/span&gt;
+      &lt;/dt&gt;
+      &lt;dd&gt;&lt;/dd&gt;
       &lt;dt&gt;
-        &lt;label for="${oidcConfClass}_${oidcConfObject.number}_clientId"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientId', 'html/5.0')&lt;/label&gt;
+        &lt;label for="jiraOAuthClientId"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientId', 'html/5.0')&lt;/label&gt;
       &lt;/dt&gt;
       &lt;dd&gt;
-        {{/html}}
-
-        $oidcConfObject.display('clientId', 'edit')
-
-        {{html clean="false"}}
+        &lt;input type="text" id="jiraOAuthClientId" name="clientId" value="$escapetool.xml($clientId)" autocomplete="off" /&gt;
       &lt;/dd&gt;
       &lt;dt&gt;
-        &lt;label for="${oidcConfClass}_${oidcConfObject.number}_clientSecret"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientSecret', 'html/5.0')&lt;/label&gt;
+        &lt;label for="jiraOAuthClientSecret"&gt;$services.localization.render('com.xwiki.jirapro.oauth.clientSecret', 'html/5.0')&lt;/label&gt;
+        #if ($hasClientSecret)
+          &lt;span class="xHint" id="jiraOAuthClientSecretHint"&gt;$services.localization.render('jira.config.auth.keepSecret', 'html/5.0')&lt;/span&gt;
+        #end
       &lt;/dt&gt;
       &lt;dd&gt;
-        {{/html}}
-
-        $oidcConfObject.display('clientSecret', 'edit')
-
-        {{html clean="false"}}
+        &lt;input type="password" id="jiraOAuthClientSecret" name="clientSecret" value="" autocomplete="new-password"
+          #if ($hasClientSecret)aria-describedby="jiraOAuthClientSecretHint"#end /&gt;
       &lt;/dd&gt;
     &lt;/dl&gt;
     {{/html}}
@@ -305,11 +344,14 @@
       <cache>long</cache>
     </property>
     <property>
-      <code>.xform dl.jira-oauth-authenticator-config input[type="text"],
-.xform dl.jira-oauth-authenticator-config label span  {
-        /* This avoid that the size of the column are adapated by the size of the element */
-        width: 0px;
-        min-width: 100%;
+      <code>/* The OAuth settings are displayed in the JIRA instance form of the JIRA administration. */
+.jira-oauth-authenticator-config {
+  margin: 0;
+}
+
+.jira-oauth-authenticator-config input[type="text"],
+.jira-oauth-authenticator-config input[type="password"] {
+  width: 100%;
 }</code>
     </property>
     <property>

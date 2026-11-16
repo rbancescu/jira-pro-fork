@@ -22,7 +22,6 @@ package com.xwiki.jirapro.cloud.internal.chart.piechart;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.Test;
 import org.xwiki.contrib.jira.charts.internal.piechart.source.JIRAPieChartData;
 import org.xwiki.contrib.jira.charts.internal.piechart.source.JIRAPieChartDataSource;
@@ -30,6 +29,7 @@ import org.xwiki.contrib.jira.macro.JIRABadRequestException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartIssues;
+import com.xwiki.jirapro.cloud.internal.chart.ChartParameters;
 import com.xwiki.jirapro.cloud.internal.chart.CloudChartQuery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +47,7 @@ class PieChartBuilderTest
     private static CloudChartQuery query(String statType)
     {
         return new CloudChartQuery(
-            List.of(new BasicNameValuePair("jql", "project = TEST"), new BasicNameValuePair("statType", statType)));
+            ChartParameters.of("jql", "project = TEST", "statType", statType));
     }
 
     private JIRAPieChartDataSource build(String statType) throws Exception

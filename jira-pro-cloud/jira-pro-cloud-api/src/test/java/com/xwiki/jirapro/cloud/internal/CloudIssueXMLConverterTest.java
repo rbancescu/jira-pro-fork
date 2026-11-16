@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import org.jdom2.Document;
 import org.jdom2.Element;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,10 +72,7 @@ class CloudIssueXMLConverterTest
 
     private List<Element> convert()
     {
-        Document document = this.converter.convert(List.of(this.searchResult), SITE_URL);
-
-        assertEquals("rss", document.getRootElement().getName());
-        return document.getRootElement().getChild("channel").getChildren("item");
+        return this.converter.convert(List.of(this.searchResult), SITE_URL);
     }
 
     private List<String> texts(Element item, String name)
@@ -216,8 +212,7 @@ class CloudIssueXMLConverterTest
             + "\"status\":{\"id\":\"3\",\"name\":\"Done\","
             + "\"iconUrl\":\"https://mysite.atlassian.net/images/icons/statuses/generic.png\"}}}]}");
 
-        Element item = this.converter.convert(List.of(result), SITE_URL).getRootElement().getChild("channel")
-            .getChild("item");
+        Element item = this.converter.convert(List.of(result), SITE_URL).get(0);
 
         // The generic icon, the same for all the statuses, is dropped so that the name is displayed.
         assertEquals("Done", item.getChildText("status"));
@@ -227,10 +222,11 @@ class CloudIssueXMLConverterTest
     @Test
     void convertSeveralPages()
     {
-        Document document = this.converter.convert(List.of(this.searchResult, this.searchResult), SITE_URL);
+        List<Element> items = this.converter.convert(List.of(this.searchResult, this.searchResult), SITE_URL);
 
+        // The issues of all the pages are returned, in order, as items.
         assertEquals(List.of("TEST-1", "TEST-2", "TEST-3", "TEST-1", "TEST-2", "TEST-3"),
-            document.getRootElement().getChild("channel").getChildren("item").stream()
-                .map(item -> item.getChildText("key")).collect(Collectors.toList()));
+            items.stream().map(item -> item.getChildText("key")).collect(Collectors.toList()));
+        assertTrue(items.stream().allMatch(item -> "item".equals(item.getName())));
     }
 }

@@ -21,7 +21,6 @@ package com.xwiki.jirapro.cloud.internal.chart;
 
 import java.util.List;
 
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,8 +33,7 @@ class CloudChartQueryTest
 {
     private static CloudChartQuery query(String name, String value)
     {
-        return new CloudChartQuery(List.of(new BasicNameValuePair(name, value),
-            new BasicNameValuePair("field", "created"), new BasicNameValuePair("field", "resolved")));
+        return new CloudChartQuery(ChartParameters.of(name, value, "field", "created", "field", "resolved"));
     }
 
     @Test
