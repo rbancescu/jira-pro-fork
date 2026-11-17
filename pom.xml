@@ -52,6 +52,7 @@
     <module>jira-pro</module>
     <module>jira-pro-oauth</module>
     <module>jira-pro-issue-create</module>
+    <module>jira-pro-xip</module>
   </modules>
   <dependencyManagement>
     <dependencies>
