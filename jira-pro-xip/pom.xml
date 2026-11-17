@@ -46,7 +46,8 @@
           <artifactId>xwiki-commons-tool-extension-plugin</artifactId>
           <!-- Needs the fix of XCOMMONS-3003, otherwise com.atlassian.sal:sal-api (pulled by the JIRA macro) is
                stored with a wrong id and offline installs fail. 15.10.9 is the first 15.10.x with the fix.
-               Don't use 16.0 to 16.3, they don't have it. -->
+               Don't use 16.0 to 16.3, they don't have it. Can be replaced with ${commons.version} once the parent
+               is on a version that includes the fix (15.10.9+ or 16.4.0+). -->
           <version>15.10.9</version>
           <configuration>
             <coreExtensions>
