@@ -139,7 +139,7 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
     /**
      * {@inheritDoc}
      *
-     * @see com.xwiki.bmc.macros.jira.internal.JiraIssueCreationManager#getAuthenticatorID(java.lang.String)
+     * @see JiraIssueCreationManager#getAuthenticatorID(java.lang.String)
      */
     public String getAuthenticatorID(String instanceId)
     {
