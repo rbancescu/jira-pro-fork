@@ -136,9 +136,10 @@ class DefaultJiraIssueCreationManagerTest
         when(this.jiraConfiguration.getJIRAServers()).thenReturn(servers);
 
         when(this.componentManagerProvider.get()).thenReturn(this.componentManager);
-        for (String instanceType : List.of("default", "cloud")) {
-            when(this.componentManager.hasComponent(JiraIssueCreationRestClient.class, instanceType)).thenReturn(true);
-            when(this.componentManager.getInstance(JiraIssueCreationRestClient.class, instanceType))
+        for (String deploymentType : List.of(JIRAServer.DATA_CENTER_DEPLOYMENT_TYPE, "cloud")) {
+            when(this.componentManager.hasComponent(JiraIssueCreationRestClient.class, deploymentType))
+                .thenReturn(true);
+            when(this.componentManager.getInstance(JiraIssueCreationRestClient.class, deploymentType))
                 .thenReturn(this.client);
         }
 
@@ -178,12 +179,12 @@ class DefaultJiraIssueCreationManagerTest
     }
 
     @Test
-    void unsupportedInstanceType()
+    void unsupportedDeploymentType()
     {
         JiraIssueCreationException exception =
             assertThrows(JiraIssueCreationException.class, () -> this.manager.suggestProject("Unsupported", ""));
 
-        assertEquals("Issue creation is not supported on the Jira instance type [other].", exception.getMessage());
+        assertEquals("Issue creation is not supported on the Jira deployment type [other].", exception.getMessage());
     }
 
     @Test
@@ -195,7 +196,7 @@ class DefaultJiraIssueCreationManagerTest
         JiraIssueCreationException exception =
             assertThrows(JiraIssueCreationException.class, () -> this.manager.suggestProject(INSTANCE, ""));
 
-        assertEquals("Failed to get the Jira client for the instance type [cloud].", exception.getMessage());
+        assertEquals("Failed to get the Jira client for the deployment type [cloud].", exception.getMessage());
         assertSame(cause, exception.getCause());
     }
 

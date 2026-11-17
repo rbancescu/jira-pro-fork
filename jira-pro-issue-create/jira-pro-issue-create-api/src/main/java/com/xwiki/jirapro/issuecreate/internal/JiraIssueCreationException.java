@@ -33,7 +33,7 @@ public class JiraIssueCreationException extends RuntimeException
      * 
      * @param message
      */
-    JiraIssueCreationException(String message)
+    public JiraIssueCreationException(String message)
     {
         super(message);
     }
@@ -44,7 +44,7 @@ public class JiraIssueCreationException extends RuntimeException
      * @param message
      * @param cause
      */
-    JiraIssueCreationException(String message, Throwable cause)
+    public JiraIssueCreationException(String message, Throwable cause)
     {
         super(message, cause);
     }

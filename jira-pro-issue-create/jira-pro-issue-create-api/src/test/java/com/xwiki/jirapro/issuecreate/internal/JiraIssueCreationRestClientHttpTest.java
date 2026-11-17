@@ -26,10 +26,8 @@ import org.xwiki.contrib.jira.config.JIRAServer;
 import org.xwiki.contrib.jira.config.internal.BasicAuthJIRAAuthenticator;
 import org.xwiki.test.junit5.mockito.ComponentTest;
 import org.xwiki.test.junit5.mockito.InjectMockComponents;
-import org.xwiki.test.junit5.mockito.MockComponent;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -42,7 +40,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for the HTTP requests of {@link AbstractJiraIssueCreationRestClient}, against WireMock.
@@ -50,9 +47,14 @@ import static org.mockito.Mockito.when;
 @ComponentTest
 class JiraIssueCreationRestClientHttpTest
 {
-    private static final String ISSUE_PATH = "/ex/jira/cloud-id/rest/api/2/issue";
+    /**
+     * The context path of the JIRA instance, which must be kept.
+     */
+    private static final String CONTEXT_PATH = "/jira";
 
-    private static final String USERS_PATH = "/ex/jira/cloud-id/rest/api/2/user/search?query=alice";
+    private static final String ISSUE_PATH = CONTEXT_PATH + "/rest/api/2/issue";
+
+    private static final String USERS_PATH = CONTEXT_PATH + "/rest/api/2/user/search?username=alice";
 
     private static final String AUTHORIZATION = "Authorization";
 
@@ -61,10 +63,7 @@ class JiraIssueCreationRestClientHttpTest
     private WireMockServer wireMockServer;
 
     @InjectMockComponents
-    private CloudJiraIssueCreationRestClient client;
-
-    @MockComponent
-    private JIRACloudEndpoints cloudEndpoints;
+    private DataCenterJiraIssueCreationRestClient client;
 
     private JIRAServer server;
 
@@ -74,12 +73,9 @@ class JiraIssueCreationRestClientHttpTest
         this.wireMockServer = new WireMockServer(options().dynamicPort());
         this.wireMockServer.start();
 
-        // The requests are sent to the host of the base URL, with the credentials of the server, whose URL is
-        // another host (as for the Atlassian API gateway).
-        this.server = new JIRAServer("https://mysite.atlassian.net", "id",
-            new BasicAuthJIRAAuthenticator("user", "pass"), "cloud");
-        when(this.cloudEndpoints.getAPIBaseURL(this.server))
-            .thenReturn("http://localhost:" + this.wireMockServer.port() + "/ex/jira/cloud-id");
+        // The requests are sent to the host of the server URL, with its credentials, keeping its context path.
+        this.server = new JIRAServer("http://localhost:" + this.wireMockServer.port() + CONTEXT_PATH, "id",
+            new BasicAuthJIRAAuthenticator("user", "pass"));
     }
 
     @AfterEach

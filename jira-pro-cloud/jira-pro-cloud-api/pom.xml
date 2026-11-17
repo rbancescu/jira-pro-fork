@@ -68,6 +68,12 @@
       <artifactId>jira-pro-oauth-api</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <!-- To provide the issue creation client of the Cloud instances. -->
+      <groupId>com.xwiki.jirapro</groupId>
+      <artifactId>jira-pro-issue-create-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- Test dependencies -->
     <dependency>

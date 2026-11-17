@@ -25,8 +25,8 @@ import org.xwiki.contrib.jira.config.JIRAServer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Rest Client for JIRA Issue creation on a given kind of JIRA instance. The component hint is the instance type it
- * handles (see {@link JIRAServer#getInstanceType()}), as for the {@code JIRAConnector} of the JIRA macros.
+ * Rest Client for JIRA Issue creation on a given kind of JIRA instance. The component hint is the deployment type it
+ * handles (see {@link JIRAServer#getDeploymentType()}), as for the {@code JIRAConnector} of the JIRA macros.
  * <p>
  * Whatever the kind of instance, the answers are returned in the JSON formats of JIRA Data Center, which are the ones
  * understood by the pickers.

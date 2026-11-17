@@ -32,12 +32,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Rest Client for JIRA Issue creation on a Data Center (or Server) instance, the {@code default} instance type.
+ * Rest Client for JIRA Issue creation on a Data Center (or Server) instance, the {@code datacenter} deployment type.
  *
  * @version $Id$
  */
 @Component
-@Named("default")
+@Named(JIRAServer.DATA_CENTER_DEPLOYMENT_TYPE)
 @Singleton
 public class DataCenterJiraIssueCreationRestClient extends AbstractJiraIssueCreationRestClient
 {

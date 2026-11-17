@@ -1,4 +1,3 @@
 com.xwiki.jirapro.issuecreate.JiraIssueCreationScriptService
 com.xwiki.jirapro.issuecreate.internal.DefaultJiraIssueCreationManager
-com.xwiki.jirapro.issuecreate.internal.CloudJiraIssueCreationRestClient
 com.xwiki.jirapro.issuecreate.internal.DataCenterJiraIssueCreationRestClient

@@ -451,22 +451,22 @@ public class DefaultJiraIssueCreationManager implements JiraIssueCreationManager
 
     /**
      * @param jiraServer the JIRA server to send the requests to
-     * @return the client handling the instance type of the server
+     * @return the client handling the deployment type of the server
      */
     private JiraIssueCreationRestClient getJiraIssueCreationRestClient(JIRAServer jiraServer)
     {
-        String instanceType = jiraServer.getInstanceType();
+        String deploymentType = jiraServer.getDeploymentType();
         ComponentManager componentManager = this.componentManagerProvider.get();
-        if (!componentManager.hasComponent(JiraIssueCreationRestClient.class, instanceType)) {
+        if (!componentManager.hasComponent(JiraIssueCreationRestClient.class, deploymentType)) {
             throw new JiraIssueCreationException(
-                String.format("Issue creation is not supported on the Jira instance type [%s].", instanceType));
+                String.format("Issue creation is not supported on the Jira deployment type [%s].", deploymentType));
         }
 
         try {
-            return componentManager.getInstance(JiraIssueCreationRestClient.class, instanceType);
+            return componentManager.getInstance(JiraIssueCreationRestClient.class, deploymentType);
         } catch (ComponentLookupException e) {
             throw new JiraIssueCreationException(
-                String.format("Failed to get the Jira client for the instance type [%s].", instanceType), e);
+                String.format("Failed to get the Jira client for the deployment type [%s].", deploymentType), e);
         }
     }
 }

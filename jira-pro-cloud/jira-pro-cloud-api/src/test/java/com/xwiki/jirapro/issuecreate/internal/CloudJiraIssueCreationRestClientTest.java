@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
+import com.xwiki.jirapro.cloud.internal.issuecreate.CloudJiraIssueCreationRestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -49,6 +50,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link CloudJiraIssueCreationRestClient}, and the pagination of the Cloud createmeta resources.
+ *
+ * The test is in the package of {@link AbstractJiraIssueCreationRestClient}, not in the one of the client, so that it
+ * can stub the protected {@code get} method that sends the requests.
  */
 @ComponentTest
 class CloudJiraIssueCreationRestClientTest

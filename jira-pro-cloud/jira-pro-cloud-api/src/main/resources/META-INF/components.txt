@@ -6,3 +6,4 @@ com.xwiki.jirapro.cloud.internal.DefaultJIRACloudEndpoints
 com.xwiki.jirapro.cloud.internal.chart.bidimensionalgrid.BiDimensionalGridChartBuilder
 com.xwiki.jirapro.cloud.internal.chart.createdvsresolved.CreatedVsResolvedChartBuilder
 com.xwiki.jirapro.cloud.internal.chart.piechart.PieChartBuilder
+com.xwiki.jirapro.cloud.internal.issuecreate.CloudJiraIssueCreationRestClient

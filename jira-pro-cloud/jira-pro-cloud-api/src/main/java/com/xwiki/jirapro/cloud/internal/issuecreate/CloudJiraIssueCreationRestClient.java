@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.xwiki.jirapro.issuecreate.internal;
+package com.xwiki.jirapro.cloud.internal.issuecreate;
 
 import java.util.Optional;
 
@@ -33,6 +33,10 @@ import org.xwiki.contrib.jira.macro.JIRAConnectionException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
+import com.xwiki.jirapro.cloud.internal.CloudJIRAConnector;
+import com.xwiki.jirapro.issuecreate.internal.AbstractJiraIssueCreationRestClient;
+import com.xwiki.jirapro.issuecreate.internal.JiraIssueCreationException;
+import com.xwiki.jirapro.issuecreate.internal.JiraIssueReporter;
 
 /**
  * Rest Client for JIRA Issue creation on a JIRA Cloud site, on the version 2 of the REST API, like Data Center. Cloud
@@ -40,9 +44,10 @@ import com.xwiki.jirapro.cloud.JIRACloudEndpoints;
  * strict mode).
  *
  * @version $Id$
+ * @since 1.1.0
  */
 @Component
-@Named("cloud")
+@Named(CloudJIRAConnector.HINT)
 @Singleton
 public class CloudJiraIssueCreationRestClient extends AbstractJiraIssueCreationRestClient
 {
